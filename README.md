@@ -48,7 +48,7 @@ python -m pip install --no-build-isolation -r requirements.txt
 python -m pip check
 ```
 
-See `docs/INSTALL.md` for notes on MMCV builds and the MSMV CUDA extension. The single-level RADIO baseline can use `ADAOCC_DISABLE_MSMV_CUDA=1` if the extension is unavailable.
+See `docs/INSTALL.md` for notes on MMCV builds and the optional MSMV CUDA extension. If MSMV is not compiled you may see `No module named models.csrc._msmv_sampling_cuda`; the single-level RADIO baseline can run with `ADAOCC_DISABLE_MSMV_CUDA=1` and will use the PyTorch fallback.
 
 ## 2. Prepare data and weights
 
