@@ -211,3 +211,24 @@ def test_local_paths_template_and_wrappers_are_config_file_driven():
         script = (ROOT / rel).read_text()
         assert "configs/local_paths.sh" in script
         assert "ADAOCC_LOCAL_CONFIG" in script
+
+def test_msmv_fallback_disable_suppresses_optional_extension_warning():
+    import pytest
+
+    pytest.importorskip("torch")
+    env = os.environ.copy()
+    env["ADAOCC_DISABLE_MSMV_CUDA"] = "1"
+    result = subprocess.run(
+        [PYTHON, "-c", "import models.csrc.wrapper as w; print(w.MSMV_CUDA)"],
+        cwd=ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr + result.stdout
+    combined = result.stdout + result.stderr
+    assert "_msmv_sampling_cuda" not in combined
+    assert "failed to load" not in combined
+    assert "False" in result.stdout
+

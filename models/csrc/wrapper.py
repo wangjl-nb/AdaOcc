@@ -8,18 +8,20 @@ def _env_flag(name, default='0'):
     value = os.getenv(name, default)
     return str(value).strip().lower() in ('1', 'true', 'yes', 'on')
 
-try:
-    from ._msmv_sampling_cuda import _ms_deform_attn_cuda_c2345_forward, _ms_deform_attn_cuda_c2345_backward
-    from ._msmv_sampling_cuda import _ms_deform_attn_cuda_c23456_forward, _ms_deform_attn_cuda_c23456_backward
-    MSMV_CUDA = True
-except ImportError as e:
-    print('Warning: failed to load one or more CUDA extensions, performance may be hurt.')
-    print('Error message:', e)
+if _env_flag('ADAOCC_DISABLE_MSMV_CUDA'):
+    # The released single-level RADIO baseline supports this PyTorch fallback.
+    # Do not try to import the optional extension when users explicitly disable
+    # it; otherwise smoke runs show a scary but harmless ImportError warning.
     MSMV_CUDA = False
-
-if MSMV_CUDA and _env_flag('ADAOCC_DISABLE_MSMV_CUDA'):
-    print('Warning: ADAOCC_DISABLE_MSMV_CUDA is set; using PyTorch fallback for MSMV sampling.')
-    MSMV_CUDA = False
+else:
+    try:
+        from ._msmv_sampling_cuda import _ms_deform_attn_cuda_c2345_forward, _ms_deform_attn_cuda_c2345_backward
+        from ._msmv_sampling_cuda import _ms_deform_attn_cuda_c23456_forward, _ms_deform_attn_cuda_c23456_backward
+        MSMV_CUDA = True
+    except ImportError as e:
+        print('Warning: optional MSMV CUDA extension is unavailable; using PyTorch fallback.')
+        print('Error message:', e)
+        MSMV_CUDA = False
 
 
 def msmv_sampling_pytorch(mlvl_feats, sampling_locations, scale_weights):
