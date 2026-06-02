@@ -59,7 +59,7 @@ Required user-prepared assets:
 | asset | original link | how to obtain | repo-local target |
 | --- | --- | --- | --- |
 | OccScanNet data | [hongxiaoy/OccScanNet](https://huggingface.co/datasets/hongxiaoy/OccScanNet) | Download/prepare OccScanNet according to its terms; see `docs/DATA.md`. | `data/OccScanNet/` |
-| RADIO | [nvidia/C-RADIOv3-B](https://huggingface.co/nvidia/C-RADIOv3-B) | Download through Hugging Face cache or snapshot locally. | HF cache or `pretrain/radio/C-RADIOv3-B/` |
+| RADIO | [nvidia/C-RADIOv3-B](https://huggingface.co/nvidia/C-RADIOv3-B) | Download through Hugging Face cache or snapshot locally. | `pretrain/radio/C-RADIOv3-B/` or `pretrain/huggingface/hub/models--nvidia--C-RADIOv3-B/` |
 | SPlatSSC FT-DaV2 depth checkpoint | [Made-Gpt/SPlatSSC](https://github.com/Made-Gpt/SplatSSC) | Use the public Occ-ScanNet/Occ-ScanNet-mini FT-DaV2 depth-branch weight linked by SPlatSSC; symlink/rename the equivalent checkpoint here. | `pretrain/depth_anything/finetune_scannet_depthanythingv2.pth` |
 | OPUS fusion pretrain | [jbwang1997/OPUS](https://github.com/jbwang1997/OPUS), [OPUS HF weights](https://huggingface.co/jbwang1997/OPUS), [generation script](https://github.com/jbwang1997/OPUS/blob/main/scripts/gen_fusion_pretrain_model.py) | Prepare `fusion_pretrain_model.pth` in OPUS from DAL-tiny + NuImages Cascade Mask R-CNN; see steps below. | `pretrain/fusion_pretrain_model.pth` |
 
@@ -104,7 +104,7 @@ If any required asset is missing, do not guess a replacement; report the exact m
 
 ## 3. Generate/verify PKLs, labels, and optional depth
 
-If your OccScanNet root has `train_subscenes.txt`, `val_subscenes.txt`, and `gathered_data/`, generate the mini annotation PKLs first. The common OccScanNet-mini setup follows the split-file order: train first 4639 entries, val/test first 2007 entries.
+If your OccScanNet root has `train_subscenes.txt`, `val_subscenes.txt`, and `gathered_data/`, generate the mini annotation PKLs first. The OccScanNet-mini sample counts follow the ISO reference setup: [`iso_occscannet_mini.yaml`](https://github.com/hongxiaoy/ISO/blob/main/iso/config/iso_occscannet_mini.yaml) selects `OccScanNet_mini`, and [`train_iso.py`](https://github.com/hongxiaoy/ISO/blob/main/iso/scripts/train_iso.py) uses `train_scenes_sample=4639` and `val_scenes_sample=2007`.
 
 ```bash
 python scripts/generate_occscannet_mini_pkls.py \
@@ -166,10 +166,16 @@ AdaOcc/
 │   └── depth_splatssc_stage1_ftdav2_vitb_20m_full/<scene>/<frame>.png  # optional
 ├── pretrain/
 │   ├── fusion_pretrain_model.pth
-│   ├── depth_anything/finetune_scannet_depthanythingv2.pth
-│   └── radio/C-RADIOv3-B/ or huggingface/hub/models--nvidia--C-RADIOv3-B/
+│   ├── depth_anything/
+│   │   └── finetune_scannet_depthanythingv2.pth
+│   ├── radio/
+│   │   └── C-RADIOv3-B/                         # RADIO local snapshot option
+│   └── huggingface/
+│       └── hub/models--nvidia--C-RADIOv3-B/     # RADIO HF cache option
 └── outputs/
 ```
+
+`pretrain/radio/C-RADIOv3-B/` and `pretrain/huggingface/hub/models--nvidia--C-RADIOv3-B/` are alternative RADIO layouts. `scripts/link_local_assets.sh` creates the parent directories for both layouts, so empty `radio/` or `huggingface/` directories are normal during setup.
 
 For precomputed-depth training, set `ADAOCC_ONLINE_DEPTH=0` in `configs/local_paths.sh` and ensure the depth PNG tree exists.
 

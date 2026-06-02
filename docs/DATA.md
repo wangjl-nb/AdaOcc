@@ -4,7 +4,7 @@ AdaOcc expects OccScanNet files under an ignored runtime root, normally `data/Oc
 
 ## Mini annotation PKLs
 
-Generate the mini PKLs from prepared OccScanNet split files when needed. The common OccScanNet-mini setup follows the prepared split-file order: train first 4639 entries, val/test first 2007 entries. This matches the reference AdaOcc mini PKLs used for the reported numbers.
+Generate the mini PKLs from prepared OccScanNet split files when needed. AdaOcc follows the ISO OccScanNet-mini reference setup: `iso/config/iso_occscannet_mini.yaml` selects `OccScanNet_mini`, and `iso/scripts/train_iso.py` uses `train_scenes_sample=4639` and `val_scenes_sample=2007`. This matches the reference AdaOcc mini PKLs used for the reported numbers.
 
 ```bash
 python scripts/generate_occscannet_mini_pkls.py --data-root data/OccScanNet --overwrite
