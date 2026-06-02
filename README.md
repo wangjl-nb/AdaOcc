@@ -11,7 +11,7 @@ This repository contains code, configuration, documentation, and reproducibility
 - Image features: one stride-16 level, `768 -> 512` projection
 - Geometry branch: TPV enabled, point-feature branch disabled
 - Queries: progressive `100 -> 500`, +100 every 40 epochs, 200 epochs total
-- Default depth: online frozen Depth-Anything-V2 with SPlatSSC Occ-ScanNet FT-DaV2 fine-tuned checkpoint
+- Default depth: online frozen Depth-Anything-V2 with the OccScanNet FT-DaV2 fine-tuned checkpoint used by SPlatSSC/EmbodiedOcc
 - Optional depth: precomputed SPlatSSC-stage1-ftDAV2 float32-RGBA PNGs
 
 Reference online-depth epoch-200 metrics on OccScanNet-mini:
@@ -60,7 +60,7 @@ Required user-prepared assets:
 | --- | --- | --- | --- |
 | OccScanNet data | [hongxiaoy/OccScanNet](https://huggingface.co/datasets/hongxiaoy/OccScanNet) | Download/prepare OccScanNet according to its terms; see `docs/DATA.md`. | `data/OccScanNet/` |
 | RADIO | [nvidia/C-RADIOv3-B](https://huggingface.co/nvidia/C-RADIOv3-B) | Download through Hugging Face cache or snapshot locally. | `pretrain/radio/C-RADIOv3-B/` or `pretrain/huggingface/hub/models--nvidia--C-RADIOv3-B/` |
-| SPlatSSC FT-DaV2 depth checkpoint | [Made-Gpt/SPlatSSC](https://github.com/Made-Gpt/SplatSSC) | Use the public Occ-ScanNet/Occ-ScanNet-mini FT-DaV2 depth-branch weight linked by SPlatSSC; symlink/rename the equivalent checkpoint here. | `pretrain/depth_anything/finetune_scannet_depthanythingv2.pth` |
+| SPlatSSC FT-DaV2 depth checkpoint | [SPlatSSC](https://github.com/Made-Gpt/SplatSSC), [HF mirror](https://huggingface.co/YkiWu/EmbodiedOcc/blob/main/finetune_scannet_depthanythingv2.pth) | Download `finetune_scannet_depthanythingv2.pth` from the HF mirror (same FT-DaV2/Depth-Anything-V2 checkpoint used by the OccScanNet setup) and place/symlink it here. | `pretrain/depth_anything/finetune_scannet_depthanythingv2.pth` |
 | OPUS fusion pretrain | [jbwang1997/OPUS](https://github.com/jbwang1997/OPUS), [OPUS HF weights](https://huggingface.co/jbwang1997/OPUS), [generation script](https://github.com/jbwang1997/OPUS/blob/main/scripts/gen_fusion_pretrain_model.py) | Prepare `fusion_pretrain_model.pth` in OPUS from DAL-tiny + NuImages Cascade Mask R-CNN; see steps below. | `pretrain/fusion_pretrain_model.pth` |
 
 ### OPUS `fusion_pretrain_model.pth`
