@@ -1,0 +1,51 @@
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.so
+*.whl
+
+# Local environments / editors
+configs/local_paths.sh
+.DS_Store
+.idea/
+.vscode/
+.env
+.venv/
+
+# Private/runtime state
+data/
+pretrain/
+outputs/
+runtime_logs/
+checkpoints/
+prediction/
+submission/
+visualizations/
+.omx/
+.codex/
+.dist_test/
+
+# Public reproducibility scripts and tests are intentionally tracked.
+
+# Large/generated scratch
+.tmp/
+tmp_*/
+demo_outputs/
+train_field_clouds/
+
+# Local benchmark outputs / isolated git worktrees
+outputs_bench/
+.worktrees/
+worktrees/
+
+# Additional release/runtime scratch
+artifacts/
+*.log
+*.out
+*.err

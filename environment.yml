@@ -1,0 +1,31 @@
+name: AdaOcc
+channels:
+  - pytorch
+  - nvidia/label/cuda-12.1.0
+  - nvidia
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  # mmcv==2.1.0 is built from source for torch 2.2/cu121; setuptools>=81
+  # removes pkg_resources, which mmcv's setup still imports.
+  - "setuptools<81"
+  - wheel
+  # Present before pip --no-build-isolation compiles mmcv==2.1.0.
+  - numpy=1.26.4
+  - packaging=24.2
+  - pyyaml
+  - ninja
+
+  # Match the verified AdaOcc development stack.
+  - pytorch=2.2.0
+  - torchvision=0.17.0
+  - torchaudio=2.2.0
+  - pytorch-cuda=12.1
+
+  # Needed for compiling models/csrc/_msmv_sampling_cuda in-place.
+  - cuda-toolkit=12.1
+  - cuda-nvcc=12.1
+  - gcc_linux-64=11.2
+  - gxx_linux-64=11.2

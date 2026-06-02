@@ -1,0 +1,55 @@
+# AdaOcc Python runtime dependencies.
+#
+# Install these after creating the conda environment from environment.yml:
+#
+#   conda env create -f environment.yml
+#   conda activate AdaOcc
+#   python -m pip install "setuptools<81" wheel "numpy==1.26.4" "packaging==24.2" "PyYAML>=6.0" "ninja"
+#   export CUDA_HOME=$CONDA_PREFIX CUDA_PATH=$CONDA_PREFIX TORCH_CUDA_ARCH_LIST="9.0" MAX_JOBS=8
+#   python -m pip install --no-build-isolation -r requirements.txt
+#
+# PyTorch/CUDA/compiler packages are intentionally kept in environment.yml so
+# the CUDA extension can use the conda-provided CUDA 12.1 toolkit and nvcc.
+
+--find-links https://download.openmmlab.com/mmcv/dist/cu121/torch2.2/index.html
+--find-links https://data.pyg.org/whl/torch-2.2.0+cu121.html
+
+mmcv==2.1.0
+mmengine==0.10.7
+mmdet==3.3.0
+mmdet3d==1.4.0
+
+spconv-cu121==2.3.8
+torch-scatter==2.1.2+pt22cu121
+
+transformers==5.0.0
+huggingface_hub==1.4.1
+safetensors==0.7.0
+tokenizers==0.22.2
+timm==1.0.25
+open_clip_torch==3.3.0
+typer==0.24.1
+typer-slim==0.24.0
+
+numpy==1.26.4
+scipy==1.11.4
+scikit-image==0.25.2
+scikit-learn==1.4.2
+opencv-python==4.10.0.84
+Pillow==12.1.0
+open3d==0.19.0
+tqdm==4.65.2
+tensorboard==2.20.0
+matplotlib==3.5.3
+
+pycocotools==2.0.11
+terminaltables==3.1.10
+Shapely==1.8.5.post1
+pyquaternion==0.9.9
+trimesh==4.11.1
+einops==0.8.2
+prettytable==3.17.0
+packaging==24.2
+addict==2.4.0
+yapf==0.43.0
+ninja==1.13.0
