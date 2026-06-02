@@ -4,7 +4,7 @@ AdaOcc expects OccScanNet files under an ignored runtime root, normally `data/Oc
 
 ## Mini annotation PKLs
 
-Generate the mini PKLs from prepared OccScanNet split files when needed. `train_subscenes.txt` and `val_subscenes.txt` are the full OccScanNet split files; this release's mini split is a deterministic fixed subset of that order: train first 4639 entries, val/test first 2007 entries. This matches the reference AdaOcc mini PKLs used for the reported numbers, but it is not a separate mini `.txt` distributed by this repository.
+Generate the mini PKLs from prepared OccScanNet split files when needed. The common OccScanNet-mini setup follows the prepared split-file order: train first 4639 entries, val/test first 2007 entries. This matches the reference AdaOcc mini PKLs used for the reported numbers.
 
 ```bash
 python scripts/generate_occscannet_mini_pkls.py --data-root data/OccScanNet --overwrite
