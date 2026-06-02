@@ -17,6 +17,7 @@ configs/local_paths.sh
 .vscode/
 .env
 .venv/
+.conda_env/
 
 # Private/runtime state
 data/
