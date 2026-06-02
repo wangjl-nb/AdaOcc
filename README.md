@@ -50,6 +50,21 @@ python -m pip check
 
 See `docs/INSTALL.md` for notes on MMCV builds and the optional MSMV CUDA extension. If MSMV is not compiled you may see `No module named models.csrc._msmv_sampling_cuda`; the single-level RADIO baseline can run with `ADAOCC_DISABLE_MSMV_CUDA=1` and will use the PyTorch fallback.
 
+Optional fused MSMV build:
+
+```bash
+export CUDA_HOME=$CONDA_PREFIX CUDA_PATH=$CONDA_PREFIX PATH=$CONDA_PREFIX/bin:$PATH
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}
+export TORCH_CUDA_ARCH_LIST="9.0"   # H100/H20; adjust for other GPUs.
+cd models/csrc && python setup.py build_ext --inplace && cd ../..
+python - <<'PY'
+from models.csrc.wrapper import MSMV_CUDA
+print('MSMV_CUDA =', MSMV_CUDA)
+PY
+```
+
+If it fails, keep `ADAOCC_DISABLE_MSMV_CUDA=1` in `configs/local_paths.sh` and continue with the fallback. If it succeeds and you want to use fused MSMV in `dist_train.sh` / `dist_val.sh`, set `ADAOCC_DISABLE_MSMV_CUDA=0`.
+
 ## 2. Prepare data and weights
 
 Prepare/download OccScanNet data according to its terms. Put or symlink the processed mini data under `data/OccScanNet`.

@@ -53,4 +53,4 @@ assert MSMV_CUDA
 PY
 ```
 
-If compilation fails with a CUDA mismatch such as `detected CUDA version (13.x) mismatches ... PyTorch (12.1)`, reset `CUDA_HOME/CUDA_PATH/PATH` to the conda environment as above and rebuild. If it still fails, leave `ADAOCC_DISABLE_MSMV_CUDA=1`; smoke, train, and eval should all use the same MSMV policy.
+If compilation fails with a CUDA mismatch such as `detected CUDA version (13.x) mismatches ... PyTorch (12.1)`, reset `CUDA_HOME/CUDA_PATH/PATH` to the conda environment as above and rebuild. If it still fails, leave `ADAOCC_DISABLE_MSMV_CUDA=1`. If compilation succeeds and you want `dist_train.sh` / `dist_val.sh` to use fused MSMV, set `ADAOCC_DISABLE_MSMV_CUDA=0`; smoke, train, and eval should all use the same MSMV policy.
