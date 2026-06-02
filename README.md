@@ -104,7 +104,7 @@ If any required asset is missing, do not guess a replacement; report the exact m
 
 ## 3. Generate/verify PKLs, labels, and optional depth
 
-If your OccScanNet root has `train_subscenes.txt`, `val_subscenes.txt`, and `gathered_data/`, generate the mini annotation PKLs first (defaults: train first 4639 entries, val/test first 2007 entries):
+If your OccScanNet root has `train_subscenes.txt`, `val_subscenes.txt`, and `gathered_data/`, generate the mini annotation PKLs first. This release's mini split is a deterministic fixed subset of the full OccScanNet split order: train first 4639 entries, val/test first 2007 entries.
 
 ```bash
 python scripts/generate_occscannet_mini_pkls.py \
