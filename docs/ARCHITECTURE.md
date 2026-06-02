@@ -16,7 +16,7 @@ The model can overlap online depth with the RADIO image encoder on CUDA when `on
 
 ## Optional precomputed-depth path
 
-When `ADAOCC_ONLINE_DEPTH=0`, the pipeline reads precomputed depth PNGs and backprojects them before image augmentation. The PNGs are AdaOcc float32-RGBA depth files, not visualization PNGs.
+When `ADAOCC_ONLINE_DEPTH=0`, the pipeline reads precomputed depth PNGs and backprojects them before image augmentation. The PNGs are AdaOcc float32-RGBA depth containers: each metric-depth float32 is stored as little-endian bytes in the four PNG channels, not as a visualized depth image.
 
 ## Decoder / query schedule
 

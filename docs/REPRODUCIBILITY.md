@@ -3,7 +3,8 @@
 ## Reference config
 
 - Config: `configs/adaocc/radio_occscannet_mini.py`
-- Default depth mode: `ADAOCC_ONLINE_DEPTH=1` in `configs/local_paths.sh`
+- Runtime layout: fixed repo-relative paths under `data/` and `pretrain/`
+- Default depth mode: online DepthAnything (`ADAOCC_ONLINE_DEPTH=1` by default)
 - Reference seed: `301619034`
 - Epochs: 200
 - Global batch size: 64
@@ -28,6 +29,7 @@ A precomputed-depth baseline from the same project was close (`mIoU≈58.20`, `I
 Before a full run, run one epoch with validation on the normal mini PKLs:
 
 ```bash
+ADAOCC_DISABLE_MSMV_CUDA=1 \
 ADAOCC_RUN_LABEL=smoke-1epoch \
 ./dist_train.sh 8 configs/adaocc/radio_occscannet_mini_smoke.py
 ```
@@ -48,12 +50,19 @@ Expected first-stage signals:
 ## Full commands
 
 ```bash
-cp configs/local_paths.example.sh configs/local_paths.sh
-${EDITOR:-nano} configs/local_paths.sh
-
+ADAOCC_DISABLE_MSMV_CUDA=1 \
+ADAOCC_RUN_LABEL=online-depth-mini \
 ./dist_train.sh 8 configs/adaocc/radio_occscannet_mini.py
 
+ADAOCC_DISABLE_MSMV_CUDA=1 \
 ./dist_val.sh 8 configs/adaocc/radio_occscannet_mini.py /path/to/epoch_200.pth
+```
+
+Optional precomputed-depth mode:
+
+```bash
+ADAOCC_ONLINE_DEPTH=0 ADAOCC_DISABLE_MSMV_CUDA=1 \
+./dist_train.sh 8 configs/adaocc/radio_occscannet_mini.py
 ```
 
 Record full commands, environment versions, checkpoint path, and metrics.

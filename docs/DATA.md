@@ -1,10 +1,29 @@
 # Data preparation
 
-AdaOcc expects OccScanNet files under an ignored runtime root, normally `data/OccScanNet`. The repository does not include any data, generated labels, depth PNGs, or PKL annotations.
+AdaOcc uses a fixed repository-relative runtime root: `data/OccScanNet`. The repository does not include data, generated labels, depth PNGs, or PKL annotations.
+
+## Expected layout
+
+Arrange local files under this ignored tree:
+
+```text
+data/OccScanNet/
+├── train_occscannet_mini.pkl
+├── val_occscannet_mini.pkl
+├── test_occscannet_mini.pkl
+├── train_subscenes.txt                         # needed only if regenerating PKLs
+├── val_subscenes.txt                           # needed only if regenerating PKLs
+├── gathered_data/<scene>/<frame>.pkl
+├── posed_images/<scene>/<frame>.jpg
+├── gts_camvisbits/<scene>/<frame>/labels.npz
+└── depth_splatssc_stage1_ftdav2_vitb_20m_full/<scene>/<frame>.png  # optional precomputed depth
+```
+
+The three PKLs are indexes. Their paths are relative to `data/OccScanNet`.
 
 ## Mini annotation PKLs
 
-Generate the mini PKLs from prepared OccScanNet split files when needed. AdaOcc follows the ISO OccScanNet-mini reference setup: `iso/config/iso_occscannet_mini.yaml` selects `OccScanNet_mini`, and `iso/scripts/train_iso.py` uses `train_scenes_sample=4639` and `val_scenes_sample=2007`. This matches the reference AdaOcc mini PKLs used for the reported numbers.
+Generate the mini PKLs from prepared OccScanNet split files when needed. AdaOcc follows the ISO OccScanNet-mini reference setup: `iso/config/iso_occscannet_mini.yaml` selects `OccScanNet_mini`, and `iso/scripts/train_iso.py` uses `train_scenes_sample=4639` and `val_scenes_sample=2007`.
 
 ```bash
 python scripts/generate_occscannet_mini_pkls.py --data-root data/OccScanNet --overwrite
@@ -42,7 +61,7 @@ python scripts/generate_occscannet_mini_gts_camvisbits.py --data-root data/OccSc
 
 ## Online vs precomputed depth
 
-Default public reproduction uses online DepthAnything (`ADAOCC_ONLINE_DEPTH=1`), so precomputed depth PNGs are not required.
+Default public reproduction uses online DepthAnything (`ADAOCC_ONLINE_DEPTH=1`, the default), so precomputed depth PNGs are not required.
 
 For optional precomputed-depth training/eval, generate or provide:
 
@@ -50,35 +69,18 @@ For optional precomputed-depth training/eval, generate or provide:
 depth_splatssc_stage1_ftdav2_vitb_20m_full/<scene>/<frame>.png
 ```
 
-These PNGs store `float32` depth as little-endian RGBA bytes. Verify with:
+These PNGs are binary depth containers. Each pixel stores one `float32` metric-depth value in meters. The file is written by casting the depth map to little-endian float32 (`<f4`) and viewing each 4-byte float as RGBA `uint8` channels (`H x W x 4`). On load, AdaOcc reads the raw RGBA bytes and views them back as `<f4`. Do not convert, resize, color-map, or re-save these PNGs as normal images.
+
+Verify with:
 
 ```bash
-python scripts/check_assets.py --data-root data/OccScanNet --pretrain-root pretrain --precomputed-depth --verify-depth-png
+python scripts/check_assets.py --precomputed-depth --verify-depth-png
 ```
 
 ## Asset check
 
 ```bash
-python scripts/check_assets.py --data-root data/OccScanNet --pretrain-root pretrain --online-depth
+python scripts/check_assets.py --online-depth
 ```
 
-The checker reports exact missing pkl/lidar/image/label/depth/pretrain paths.
-
-## Final expected layout
-
-After generating PKLs/labels and linking weights, the relevant data tree should be:
-
-```text
-data/OccScanNet/
-├── train_occscannet_mini.pkl
-├── val_occscannet_mini.pkl
-├── test_occscannet_mini.pkl
-├── gathered_data/<scene>/<frame>.pkl
-├── posed_images/<scene>/<frame>.jpg
-├── gts_camvisbits/<scene>/<frame>/labels.npz
-└── depth_splatssc_stage1_ftdav2_vitb_20m_full/<scene>/<frame>.png  # optional precomputed depth
-```
-
-The three PKLs are indexes. Their paths are relative to `ADAOCC_DATA_ROOT` from `configs/local_paths.sh`.
-
-`--verify-depth-png` decodes a small sample by default (`--max-depth-checks 16`) while still checking every pkl-referenced depth path exists. Use `--max-depth-checks 0` only if you want an exhaustive OpenCV decode pass.
+The checker reports exact missing pkl/lidar/image/label/depth/pretrain paths. `--verify-depth-png` decodes a small sample by default (`--max-depth-checks 16`) while still checking every pkl-referenced depth path exists. Use `--max-depth-checks 0` only if you want an exhaustive decode pass.

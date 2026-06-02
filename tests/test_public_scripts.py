@@ -71,8 +71,10 @@ def test_check_assets_reports_missing_and_passes_online_without_precomputed_dept
     data = make_minimal_occscannet(tmp_path)
     pretrain = tmp_path / "pretrain"
     (pretrain / "depth_anything").mkdir(parents=True)
+    (pretrain / "radio" / "C-RADIOv3-B").mkdir(parents=True)
     (pretrain / "fusion_pretrain_model.pth").write_bytes(b"stub")
     (pretrain / "depth_anything" / "finetune_scannet_depthanythingv2.pth").write_bytes(b"stub")
+    (pretrain / "radio" / "C-RADIOv3-B" / "config.json").write_text("{}")
     result = run_cmd([
         PYTHON,
         "scripts/check_assets.py",
@@ -198,19 +200,20 @@ def test_online_depth_points_projects_and_freezes_fake_model():
     assert torch.allclose(points[0][:, 3:], torch.zeros((4, 2)))
 
 
-def test_local_paths_template_and_wrappers_are_config_file_driven():
-    template = ROOT / "configs" / "local_paths.example.sh"
-    assert template.exists()
-    text = template.read_text()
-    assert "Copy this file to configs/local_paths.sh" in text
-    assert "ADAOCC_DATA_ROOT" in text
-    assert "ADAOCC_ONLINE_DEPTH" in text
-    assert "ADAOCC_DISABLE_MSMV_CUDA" in text
+def test_public_wrappers_use_fixed_repo_relative_layout():
+    assert not (ROOT / "configs" / "local_paths.example.sh").exists()
+    assert not (ROOT / "scripts" / "link_local_assets.sh").exists()
 
-    for rel in ["dist_train.sh", "dist_val.sh", "scripts/link_local_assets.sh"]:
+    for rel in ["dist_train.sh", "dist_val.sh"]:
         script = (ROOT / rel).read_text()
-        assert "configs/local_paths.sh" in script
-        assert "ADAOCC_LOCAL_CONFIG" in script
+        assert "configs/local_paths.sh" not in script
+        assert "ADAOCC_LOCAL_CONFIG" not in script
+        assert 'ADAOCC_REPO_ROOT="${ADAOCC_REPO_ROOT:-$ROOT}"' in script
+
+    cfg = (ROOT / "configs" / "adaocc" / "radio_occscannet_mini.py").read_text()
+    assert 'dataset_root = str(_repo_root / "data" / "OccScanNet")' in cfg
+    assert 'train_ann_file = str(_Path(dataset_root) / "train_occscannet_mini.pkl")' in cfg
+    assert 'radio_model_id = str(_repo_root / "pretrain" / "radio" / "C-RADIOv3-B")' in cfg
 
 def test_msmv_fallback_disable_suppresses_optional_extension_warning():
     import pytest

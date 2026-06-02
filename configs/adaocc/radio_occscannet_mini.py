@@ -25,51 +25,21 @@ def _bool_env(name, default=True):
     return value.strip().lower() not in {"0", "false", "no", "off"}
 
 
-def _path_env(name, default):
-    value = _os.getenv(name)
-    if value is None or value == "":
-        value = default
-    path = _Path(value).expanduser()
-    if not path.is_absolute():
-        path = _repo_root / path
-    return str(path)
-
-
-def _data_file(env_name, default_name):
-    value = _os.getenv(env_name)
-    if value:
-        path = _Path(value).expanduser()
-        if not path.is_absolute():
-            path = _Path(dataset_root) / path
-        return str(path)
-    return str(_Path(dataset_root) / default_name)
-
-# -------------------- Public path knobs --------------------
-dataset_root = _path_env("ADAOCC_DATA_ROOT", _repo_root / "data" / "OccScanNet")
-occ_root = _path_env("ADAOCC_OCC_ROOT", _Path(dataset_root) / "gts_camvisbits")
-train_ann_file = _data_file(
-    "ADAOCC_TRAIN_PKL",
-    "train_occscannet_mini.pkl",
-)
-val_ann_file = _data_file(
-    "ADAOCC_VAL_PKL",
-    "val_occscannet_mini.pkl",
-)
-test_ann_file = _data_file(
-    "ADAOCC_TEST_PKL",
-    "test_occscannet_mini.pkl",
-)
-load_from = _path_env("ADAOCC_PRETRAIN", _repo_root / "pretrain" / "fusion_pretrain_model.pth")
-_default_radio_local = _repo_root / "pretrain" / "radio" / "C-RADIOv3-B"
-radio_model_id = _os.getenv(
-    "ADAOCC_RADIO_MODEL",
-    str(_default_radio_local) if _default_radio_local.exists() else "nvidia/C-RADIOv3-B",
-)
-radio_local_files_only = _bool_env("ADAOCC_HF_LOCAL_FILES_ONLY", True)
-output_root = _path_env("ADAOCC_OUTPUT_ROOT", _repo_root / "outputs")
-depth_anything_model_path = _path_env(
-    "ADAOCC_DEPTH_ANYTHING_CKPT",
-    _repo_root / "pretrain" / "depth_anything" / "finetune_scannet_depthanythingv2.pth",
+# -------------------- Fixed repository-relative runtime paths --------------------
+# Public reproduction uses a fixed layout so users only need to arrange files
+# under the tree documented in README.md.  Path overrides are intentionally not
+# part of the normal open-source workflow.
+dataset_root = str(_repo_root / "data" / "OccScanNet")
+occ_root = str(_Path(dataset_root) / "gts_camvisbits")
+train_ann_file = str(_Path(dataset_root) / "train_occscannet_mini.pkl")
+val_ann_file = str(_Path(dataset_root) / "val_occscannet_mini.pkl")
+test_ann_file = str(_Path(dataset_root) / "test_occscannet_mini.pkl")
+load_from = str(_repo_root / "pretrain" / "fusion_pretrain_model.pth")
+radio_model_id = str(_repo_root / "pretrain" / "radio" / "C-RADIOv3-B")
+radio_local_files_only = True
+output_root = str(_repo_root / "outputs")
+depth_anything_model_path = str(
+    _repo_root / "pretrain" / "depth_anything" / "finetune_scannet_depthanythingv2.pth"
 )
 
 # -------------------- Dataset --------------------
@@ -658,5 +628,5 @@ resume_from = None
 
 # Keep MMEngine's config dump/visualizer path valid: imported helper objects are
 # only needed while evaluating this file and should not become config fields.
-del _Path, _os, _sys, _config_dir, _repo_root, _default_radio_local
-del _bool_env, _path_env, _data_file
+del _Path, _os, _sys, _config_dir, _repo_root
+del _bool_env

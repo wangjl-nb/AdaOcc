@@ -191,7 +191,6 @@ def main() -> int:
     parser.add_argument("--online-depth", action="store_true", help="Require online DepthAnything checkpoint")
     parser.add_argument("--precomputed-depth", action="store_true", help="Require pkl-referenced precomputed depth PNGs")
     parser.add_argument("--verify-depth-png", action="store_true", help="Decode precomputed depth PNGs as float32 RGBA")
-    parser.add_argument("--radio-model", default="nvidia/C-RADIOv3-B")
     parser.add_argument("--max-missing-report", type=int, default=50)
     parser.add_argument("--max-depth-checks", type=int, default=16, help="Maximum existing depth PNGs to decode when --verify-depth-png is set; 0 means decode all")
     parser.add_argument("--json", action="store_true")
@@ -215,10 +214,8 @@ def main() -> int:
         add_missing(missing, "depth_anything_ckpt", pretrain_root / "depth_anything" / "finetune_scannet_depthanythingv2.pth")
 
     local_radio = pretrain_root / "radio" / "C-RADIOv3-B"
-    hf_radio = pretrain_root / "huggingface" / "hub" / "models--nvidia--C-RADIOv3-B"
-    radio_ok = local_radio.exists() or hf_radio.exists() or args.radio_model == "nvidia/C-RADIOv3-B"
-    if not radio_ok:
-        add_missing(missing, "radio", local_radio, "or Hugging Face model id nvidia/C-RADIOv3-B")
+    if not local_radio.exists():
+        add_missing(missing, "radio", local_radio)
 
     split_paths = [resolve_path(data_root, split) for split in args.splits]
     counts, manifest_missing, samples = check_manifest(

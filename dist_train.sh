@@ -4,15 +4,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 
-LOCAL_CONFIG="${ADAOCC_LOCAL_CONFIG:-$ROOT/configs/local_paths.sh}"
-if [[ -f "$LOCAL_CONFIG" ]]; then
-  # shellcheck source=/dev/null
-  source "$LOCAL_CONFIG"
-elif [[ -n "${ADAOCC_LOCAL_CONFIG:-}" ]]; then
-  echo "[error] ADAOCC_LOCAL_CONFIG points to a missing file: $LOCAL_CONFIG" >&2
-  exit 1
-fi
-
 GPUS=${1:-8}
 CONFIG=${2:-configs/adaocc/radio_occscannet_mini.py}
 shift $(( $# >= 2 ? 2 : $# ))
