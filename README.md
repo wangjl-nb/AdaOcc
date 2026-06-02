@@ -27,7 +27,7 @@ Primary reproduction tolerance: about ±0.5 for `mIoU` and `IoU`.
 
 ## Repository map
 
-- Config: `configs/adaocc/radio_occscannet_mini.py`
+- Configs: `configs/adaocc/radio_occscannet_mini.py`, `configs/adaocc/radio_occscannet_mini_smoke.py`
 - Training/eval: `train.py`, `val.py`, `dist_train.sh`, `dist_val.sh`
 - Online depth: `models/adaocc/online_depth.py`, `loaders/pipelines/online_depth_inputs.py`
 - Data scripts: `scripts/check_assets.py`, `scripts/generate_occscannet_mini_pkls.py`, `scripts/generate_occscannet_mini_gts_camvisbits.py`, `scripts/generate_occscannet_mini_depth_da_v2.py`
@@ -210,10 +210,18 @@ print('model', cfg.model.type, 'dataset', cfg.dataset_type, 'online_depth', cfg.
 PY
 ```
 
-Short training smoke: run a one-sample or short run, then check early loss scale:
+One-epoch train+val smoke. This uses the same mini PKLs/data as the full run and only shortens the epoch count:
 
 ```bash
-python scripts/check_loss_scale.py /path/to/train.log --first-n 20
+ADAOCC_RUN_LABEL=smoke-1epoch \
+./dist_train.sh 8 configs/adaocc/radio_occscannet_mini_smoke.py
+```
+
+Then check the training log:
+
+```bash
+latest_log=$(find outputs/AdaOcc -name '*.log' | sort | tail -n 1)
+python scripts/check_loss_scale.py "$latest_log" --first-n 20
 ```
 
 A healthy first stage should show `train_runtime_num_query: 100`, finite `loss_containment`, and early total loss roughly in the `5-8` range.
@@ -222,8 +230,7 @@ A healthy first stage should show `train_runtime_num_query: 100`, finite `loss_c
 
 ```bash
 ADAOCC_RUN_LABEL=online-depth-mini \
-./dist_train.sh 8 configs/adaocc/radio_occscannet_mini.py \
-  --override randomness.seed=301619034
+./dist_train.sh 8 configs/adaocc/radio_occscannet_mini.py
 ```
 
 Evaluate the final checkpoint:

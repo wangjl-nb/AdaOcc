@@ -653,7 +653,7 @@ env_cfg = dict(
     dist_cfg=dict(backend="nccl"),
     mp_cfg=dict(mp_start_method="fork", opencv_num_threads=0),
 )
-randomness = dict(seed=0, deterministic=False)
+randomness = dict(seed=301619034, deterministic=False)
 resume_from = None
 
 # Keep MMEngine's config dump/visualizer path valid: imported helper objects are

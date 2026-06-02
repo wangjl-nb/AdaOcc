@@ -23,12 +23,20 @@ Online-depth epoch-200 reference:
 
 A precomputed-depth baseline from the same project was close (`mIoU≈58.20`, `IoU≈65.31`), but online depth is the default public reproduction path.
 
-## Loss-scale check
+## Smoke and loss-scale check
 
-Before a full run, inspect early logs:
+Before a full run, run one epoch with validation on the normal mini PKLs:
 
 ```bash
-python scripts/check_loss_scale.py /path/to/train.log --first-n 20
+ADAOCC_RUN_LABEL=smoke-1epoch \
+./dist_train.sh 8 configs/adaocc/radio_occscannet_mini_smoke.py
+```
+
+Then inspect early logs:
+
+```bash
+latest_log=$(find outputs/AdaOcc -name '*.log' | sort | tail -n 1)
+python scripts/check_loss_scale.py "$latest_log" --first-n 20
 ```
 
 Expected first-stage signals:
@@ -43,8 +51,7 @@ Expected first-stage signals:
 cp configs/local_paths.example.sh configs/local_paths.sh
 ${EDITOR:-nano} configs/local_paths.sh
 
-./dist_train.sh 8 configs/adaocc/radio_occscannet_mini.py \
-  --override randomness.seed=301619034
+./dist_train.sh 8 configs/adaocc/radio_occscannet_mini.py
 
 ./dist_val.sh 8 configs/adaocc/radio_occscannet_mini.py /path/to/epoch_200.pth
 ```
