@@ -29,5 +29,5 @@ Useful upstream routes:
 - SPlatSSC: `https://github.com/Made-Gpt/SplatSSC`
 - Depth Anything V2: `https://github.com/DepthAnything/Depth-Anything-V2`
 - RADIO: `https://huggingface.co/nvidia/C-RADIOv3-B`
-- SPlatSSC public FT-DaV2 depth-branch weights: `https://github.com/Made-Gpt/SplatSSC`
+- SPlatSSC public FT-DaV2 depth-branch weights (`finetune_scannet_depthanythingv2.pth`, fine-tuned Depth Anything V2 on ScanNet): `https://github.com/Made-Gpt/SplatSSC`
 - FT-DaV2 checkpoint HF mirror used for reproducible CLI downloads: `https://huggingface.co/YkiWu/EmbodiedOcc/blob/main/finetune_scannet_depthanythingv2.pth`

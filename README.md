@@ -99,6 +99,8 @@ Required user-prepared assets:
 | SPlatSSC FT-DaV2 depth checkpoint | [SPlatSSC](https://github.com/Made-Gpt/SplatSSC), [HF mirror](https://huggingface.co/YkiWu/EmbodiedOcc/blob/main/finetune_scannet_depthanythingv2.pth) | `pretrain/depth_anything/finetune_scannet_depthanythingv2.pth` |
 | OPUS fusion pretrain | [jbwang1997/OPUS](https://github.com/jbwang1997/OPUS), [OPUS HF weights](https://huggingface.co/jbwang1997/OPUS), [generation script](https://github.com/jbwang1997/OPUS/blob/main/scripts/gen_fusion_pretrain_model.py) | `pretrain/fusion_pretrain_model.pth` |
 
+The Depth Anything weight used by AdaOcc is the public SPlatSSC fine-tuned Depth Anything V2 ScanNet checkpoint, `finetune_scannet_depthanythingv2.pth`; this repo does not redistribute it.
+
 ### OPUS `fusion_pretrain_model.pth`
 
 AdaOcc only uses the OPUS fusion pretrain as an initialization checkpoint; this repository does not redistribute it. OPUS documents the generation path:
