@@ -15,12 +15,14 @@ Users are responsible for obtaining every external asset under its own license a
 
 ## OPUS fusion pretrain
 
-`pretrain/fusion_pretrain_model.pth` is generated outside AdaOcc using OPUS. In OPUS, download:
+`pretrain/fusion_pretrain_model.pth` may be the AdaOcc HF slim middle-encoder subset (`https://huggingface.co/wjldragon/AdaOcc`) or the full OPUS-generated checkpoint. The slim subset keeps only `pts_middle_encoder.*` for the current public baseline and keeps OPUS/upstream checkpoint attribution.
+
+To generate the full checkpoint with OPUS, download:
 
 - DAL-tiny pretrained weight from `https://huggingface.co/jbwang1997/OPUS`
 - the NuImages Cascade Mask R-CNN checkpoint linked in the OPUS README
 
-Put both under `OPUS/pretrain/`, run `python scripts/gen_fusion_pretrain_model.py` in OPUS, then place the generated `fusion_pretrain_model.pth` under `AdaOcc/pretrain/`.
+Put both under `OPUS/pretrain/`, run `python scripts/gen_fusion_pretrain_model.py` in OPUS, then optionally run AdaOcc's `scripts/extract_adaocc_fusion_pretrain.py` to produce the slim subset.
 
 Useful upstream routes:
 

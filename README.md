@@ -97,22 +97,24 @@ Required user-prepared assets:
 | OccScanNet data | [hongxiaoy/OccScanNet](https://huggingface.co/datasets/hongxiaoy/OccScanNet) | `data/OccScanNet/` |
 | RADIO | [nvidia/C-RADIOv3-B](https://huggingface.co/nvidia/C-RADIOv3-B) | `pretrain/radio/C-RADIOv3-B/` |
 | Depth Anything V2 OccScanNet FT checkpoint | [EmbodiedOcc HF](https://huggingface.co/YkiWu/EmbodiedOcc/blob/main/finetune_scannet_depthanythingv2.pth), also used by [SPlatSSC](https://github.com/Made-Gpt/SplatSSC) as FT-DaV2 | `pretrain/depth_anything/finetune_scannet_depthanythingv2.pth` |
-| OPUS fusion pretrain | [jbwang1997/OPUS](https://github.com/jbwang1997/OPUS), [OPUS HF weights](https://huggingface.co/jbwang1997/OPUS), [generation script](https://github.com/jbwang1997/OPUS/blob/main/scripts/gen_fusion_pretrain_model.py) | `pretrain/fusion_pretrain_model.pth` |
+| AdaOcc/OPUS fusion pretrain | [AdaOcc HF slim checkpoint](https://huggingface.co/wjldragon/AdaOcc/blob/main/pretrain/fusion_pretrain_model.pth) or full [OPUS](https://github.com/jbwang1997/OPUS) checkpoint | `pretrain/fusion_pretrain_model.pth` |
 
 The Depth Anything weight used by AdaOcc is the public EmbodiedOcc fine-tuned Depth Anything V2 OccScanNet checkpoint, `finetune_scannet_depthanythingv2.pth`; SPlatSSC also uses this FT-DaV2 checkpoint. This repo does not redistribute it.
 
-### OPUS `fusion_pretrain_model.pth`
+### `fusion_pretrain_model.pth`
 
-AdaOcc only uses the OPUS fusion pretrain as an initialization checkpoint; this repository does not redistribute it. OPUS documents the generation path:
+AdaOcc public baseline only initializes `pts_middle_encoder.*` from the OPUS fusion pretrain; `pts_backbone.*` and `pts_neck.*` are pruned because `enable_pts_feature_branch=False`.  The file at `pretrain/fusion_pretrain_model.pth` may therefore be either the [AdaOcc HF slim checkpoint](https://huggingface.co/wjldragon/AdaOcc/blob/main/pretrain/fusion_pretrain_model.pth) or the full OPUS-generated checkpoint.
 
-1. Clone OPUS: `https://github.com/jbwang1997/OPUS`.
-2. Download OPUS DAL-tiny pretrained weight from [OPUS HF weights](https://huggingface.co/jbwang1997/OPUS), usually named `dal-tiny-map66.9-nds71.1.pth`.
-3. Download the [NuImages Cascade Mask R-CNN checkpoint](https://download.openmmlab.com/mmdetection3d/v0.1.0_models/nuimages_semseg/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim/cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth) referenced by OPUS, usually named `cascade_mask_rcnn_r50_fpn_coco-20e_20e_nuim_20201009_124951-40963960.pth`.
-4. Put both files under `OPUS/pretrain/`.
-5. In the OPUS repo, run `python scripts/gen_fusion_pretrain_model.py`.
-6. Copy or symlink the generated `OPUS/pretrain/fusion_pretrain_model.pth` to `AdaOcc/pretrain/fusion_pretrain_model.pth`.
+If you prefer to regenerate the slim file from a full OPUS checkpoint, run:
 
-AdaOcc loads only matching modules from this checkpoint; old OPUS image-backbone keys that do not match RADIO are expected to be skipped.
+```bash
+python scripts/extract_adaocc_fusion_pretrain.py \
+  --input OPUS/pretrain/fusion_pretrain_model.pth \
+  --output pretrain/fusion_pretrain_model.pth \
+  --overwrite
+```
+
+To generate the full OPUS checkpoint from scratch, follow OPUS: clone `https://github.com/jbwang1997/OPUS`, download the OPUS DAL-tiny weight from [OPUS HF weights](https://huggingface.co/jbwang1997/OPUS) plus the NuImages Cascade Mask R-CNN checkpoint linked by OPUS, place both under `OPUS/pretrain/`, then run `python scripts/gen_fusion_pretrain_model.py` inside OPUS.
 
 If any required asset is missing, do not guess a replacement; report the exact missing file/path.
 

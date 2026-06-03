@@ -235,3 +235,46 @@ def test_msmv_fallback_disable_suppresses_optional_extension_warning():
     assert "failed to load" not in combined
     assert "False" in result.stdout
 
+
+def test_extract_fusion_pretrain_filters_only_current_adaocc_middle_encoder():
+    from collections import OrderedDict
+    from scripts.extract_adaocc_fusion_pretrain import DEFAULT_PREFIXES, filter_state_dict
+
+    state = OrderedDict([
+        ("img_backbone.patch_embed.proj.weight", object()),
+        ("pts_middle_encoder.conv_input.0.weight", object()),
+        ("pts_backbone.blocks.0.weight", object()),
+        ("pts_neck.lateral_convs.0.weight", object()),
+        ("occ_head.weight", object()),
+    ])
+    selected = filter_state_dict(state)
+
+    assert DEFAULT_PREFIXES == ("pts_middle_encoder.",)
+    assert list(selected) == ["pts_middle_encoder.conv_input.0.weight"]
+
+
+def test_extract_fusion_pretrain_converts_5d_spconv_kernel_layout():
+    from collections import OrderedDict
+    from scripts.extract_adaocc_fusion_pretrain import convert_spconv_kernels_for_load_hook
+
+    class FakeKernel:
+        ndim = 5
+
+        def permute(self, *dims):
+            self.dims = dims
+            return self
+
+        def contiguous(self):
+            return ("converted", self.dims)
+
+    kernel = FakeKernel()
+    state = OrderedDict([
+        ("pts_middle_encoder.conv_input.0.weight", kernel),
+        ("pts_middle_encoder.conv_input.1.weight", object()),
+    ])
+
+    converted, keys = convert_spconv_kernels_for_load_hook(state)
+
+    assert keys == ["pts_middle_encoder.conv_input.0.weight"]
+    assert converted["pts_middle_encoder.conv_input.0.weight"] == ("converted", (1, 2, 3, 4, 0))
+    assert converted["pts_middle_encoder.conv_input.1.weight"] is state["pts_middle_encoder.conv_input.1.weight"]
