@@ -11,7 +11,7 @@ This repository contains code, configuration, documentation, and reproducibility
 - Image features: one stride-16 level, `768 -> 512` projection
 - Geometry branch: TPV enabled, point-feature branch disabled
 - Queries: progressive `100 -> 500`, +100 every 40 epochs, 200 epochs total
-- Default depth: online frozen Depth-Anything-V2 with the OccScanNet FT-DaV2 checkpoint used by SPlatSSC/EmbodiedOcc
+- Default depth: online frozen Depth-Anything-V2 with the EmbodiedOcc OccScanNet FT-DaV2 checkpoint also used by SPlatSSC
 - Optional depth: precomputed SPlatSSC-stage1-ftDAV2 float32-RGBA PNGs
 
 Reference online-depth epoch-200 metrics on OccScanNet-mini:
@@ -96,10 +96,10 @@ Required user-prepared assets:
 | --- | --- | --- |
 | OccScanNet data | [hongxiaoy/OccScanNet](https://huggingface.co/datasets/hongxiaoy/OccScanNet) | `data/OccScanNet/` |
 | RADIO | [nvidia/C-RADIOv3-B](https://huggingface.co/nvidia/C-RADIOv3-B) | `pretrain/radio/C-RADIOv3-B/` |
-| SPlatSSC FT-DaV2 depth checkpoint | [SPlatSSC](https://github.com/Made-Gpt/SplatSSC), [HF mirror](https://huggingface.co/YkiWu/EmbodiedOcc/blob/main/finetune_scannet_depthanythingv2.pth) | `pretrain/depth_anything/finetune_scannet_depthanythingv2.pth` |
+| Depth Anything V2 OccScanNet FT checkpoint | [EmbodiedOcc HF](https://huggingface.co/YkiWu/EmbodiedOcc/blob/main/finetune_scannet_depthanythingv2.pth), also used by [SPlatSSC](https://github.com/Made-Gpt/SplatSSC) as FT-DaV2 | `pretrain/depth_anything/finetune_scannet_depthanythingv2.pth` |
 | OPUS fusion pretrain | [jbwang1997/OPUS](https://github.com/jbwang1997/OPUS), [OPUS HF weights](https://huggingface.co/jbwang1997/OPUS), [generation script](https://github.com/jbwang1997/OPUS/blob/main/scripts/gen_fusion_pretrain_model.py) | `pretrain/fusion_pretrain_model.pth` |
 
-The Depth Anything weight used by AdaOcc is the public SPlatSSC fine-tuned Depth Anything V2 ScanNet checkpoint, `finetune_scannet_depthanythingv2.pth`; this repo does not redistribute it.
+The Depth Anything weight used by AdaOcc is the public EmbodiedOcc fine-tuned Depth Anything V2 OccScanNet checkpoint, `finetune_scannet_depthanythingv2.pth`; SPlatSSC also uses this FT-DaV2 checkpoint. This repo does not redistribute it.
 
 ### OPUS `fusion_pretrain_model.pth`
 
