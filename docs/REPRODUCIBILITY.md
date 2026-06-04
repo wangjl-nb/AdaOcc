@@ -6,7 +6,7 @@
 - Runtime layout: fixed repo-relative paths under `data/` and `pretrain/`
 - Distributed wrappers do not export CUDA/NCCL/HF/AdaOcc path variables; pass run naming with `--run-label` and use command-prefix env only for explicit mode switches.
 - Default depth mode: online DepthAnything (`ADAOCC_ONLINE_DEPTH=1` by default)
-- Reference seed: `301619034`
+- Reference seed: `0`
 - Epochs: 200
 - Global batch size: 64
 - Query schedule: `100 -> 500`, +100 every 40 epochs

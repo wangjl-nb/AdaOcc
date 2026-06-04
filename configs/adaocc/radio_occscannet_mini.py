@@ -2,7 +2,7 @@
 
 This file intentionally contains the effective baseline in one place so the
 open-source reproduction does not depend on dated/private experiment configs.
-Scientific defaults match the promoted seed-301619034 RADIO baseline; filesystem
+Scientific defaults match the released seed-0 RADIO online-depth run; filesystem
 locations are fixed relative to the repository root by default.
 """
 
@@ -623,7 +623,7 @@ env_cfg = dict(
     dist_cfg=dict(backend="nccl"),
     mp_cfg=dict(mp_start_method="fork", opencv_num_threads=0),
 )
-randomness = dict(seed=301619034, deterministic=False)
+randomness = dict(seed=0, deterministic=False)
 resume_from = None
 
 # Keep MMEngine's config dump/visualizer path valid: imported helper objects are
