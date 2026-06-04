@@ -4,6 +4,7 @@
 
 - Config: `configs/adaocc/radio_occscannet_mini.py`
 - Runtime layout: fixed repo-relative paths under `data/` and `pretrain/`
+- Distributed wrappers do not export CUDA/NCCL/HF/AdaOcc path variables; pass run naming with `--run-label` and use command-prefix env only for explicit mode switches.
 - Default depth mode: online DepthAnything (`ADAOCC_ONLINE_DEPTH=1` by default)
 - Reference seed: `301619034`
 - Epochs: 200
@@ -15,12 +16,9 @@
 
 Online-depth epoch-200 reference:
 
-| metric | target | tolerance |
-| --- | ---: | ---: |
-| `occ/mIoU` | 58.49 | ±0.50 |
-| `occ/IoU` | 65.49 | ±0.50 |
-| `occ/mIoU_small` | 45.68 | observational |
-| `occ/mIoU_head` | 61.34 | observational |
+| mIoU | IoU | ceiling | floor | wall | window | chair | bed | sofa | table | tvs | furniture | objects |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 58.49 | 65.49 | 47.80 | 57.61 | 56.41 | 48.26 | 59.09 | 75.04 | 75.29 | 57.78 | 43.56 | 64.60 | 57.99 |
 
 A precomputed-depth baseline from the same project was close (`mIoU≈58.20`, `IoU≈65.31`), but online depth is the default public reproduction path.
 
@@ -30,8 +28,8 @@ Before a full run, run one epoch with validation on the normal mini PKLs:
 
 ```bash
 ADAOCC_DISABLE_MSMV_CUDA=1 \
-ADAOCC_RUN_LABEL=smoke-1epoch \
-./dist_train.sh 8 configs/adaocc/radio_occscannet_mini_smoke.py
+./dist_train.sh 8 configs/adaocc/radio_occscannet_mini_smoke.py \
+  --run-label smoke-1epoch
 ```
 
 Then inspect early logs:
@@ -51,8 +49,8 @@ Expected first-stage signals:
 
 ```bash
 ADAOCC_DISABLE_MSMV_CUDA=1 \
-ADAOCC_RUN_LABEL=online-depth-mini \
-./dist_train.sh 8 configs/adaocc/radio_occscannet_mini.py
+./dist_train.sh 8 configs/adaocc/radio_occscannet_mini.py \
+  --run-label online-depth-mini
 
 ADAOCC_DISABLE_MSMV_CUDA=1 \
 ./dist_val.sh 8 configs/adaocc/radio_occscannet_mini.py /path/to/epoch_200.pth

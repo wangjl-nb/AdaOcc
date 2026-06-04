@@ -3,7 +3,7 @@
 This file intentionally contains the effective baseline in one place so the
 open-source reproduction does not depend on dated/private experiment configs.
 Scientific defaults match the promoted seed-301619034 RADIO baseline; filesystem
-locations are parameterized by ADAOCC_* environment variables.
+locations are fixed relative to the repository root by default.
 """
 
 import os as _os

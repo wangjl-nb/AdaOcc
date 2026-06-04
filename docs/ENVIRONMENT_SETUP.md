@@ -7,11 +7,17 @@ Short form:
 ```bash
 conda env create -f environment.yml
 conda activate AdaOcc
-python -m pip install "setuptools<81" wheel "numpy==1.26.4" "packaging==24.2" "PyYAML>=6.0" ninja
-export CUDA_HOME=$CONDA_PREFIX CUDA_PATH=$CONDA_PREFIX PATH=$CONDA_PREFIX/bin:$PATH
+```
+
+```bash
+export CUDA_HOME=$CONDA_PREFIX
+export CUDA_PATH=$CONDA_PREFIX
+export PATH=$CONDA_PREFIX/bin:$PATH
 export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:${LD_LIBRARY_PATH:-}
 export TORCH_CUDA_ARCH_LIST="9.0"
 export MAX_JOBS=8
+
+python -m pip install "setuptools<81" wheel "numpy==1.26.4" "packaging==24.2" "PyYAML>=6.0" ninja
 python -m pip install --no-build-isolation -r requirements.txt
 python -m pip check
 ```

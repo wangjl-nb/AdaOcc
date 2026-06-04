@@ -208,7 +208,28 @@ def test_public_wrappers_use_fixed_repo_relative_layout():
         script = (ROOT / rel).read_text()
         assert "configs/local_paths.sh" not in script
         assert "ADAOCC_LOCAL_CONFIG" not in script
-        assert 'ADAOCC_REPO_ROOT="${ADAOCC_REPO_ROOT:-$ROOT}"' in script
+        assert "export ADAOCC_" not in script
+        assert "export HF_HOME" not in script
+        assert "CUDA_VISIBLE_DEVICES" not in script
+        assert "NCCL_" not in script
+        assert "torch.distributed.run" in script
+        assert "PYTHON=${PYTHON:-python}" not in script
+
+    train_script = (ROOT / "dist_train.sh").read_text()
+    assert 'GPUS=${1:-8}' in train_script
+    assert 'CONFIG=${2:-configs/adaocc/radio_occscannet_mini.py}' in train_script
+    assert '--config "$CONFIG"' in train_script
+    assert '"$@"' in train_script
+
+    val_script = (ROOT / "dist_val.sh").read_text()
+    assert 'GPUS=${1:-8}' in val_script
+    assert 'CONFIG=${2:-configs/adaocc/radio_occscannet_mini.py}' in val_script
+    assert 'WEIGHT=${3:?usage: dist_val.sh GPUS CONFIG WEIGHT [MASTER_PORT]}' in val_script
+
+    train_py = (ROOT / "train.py").read_text()
+    assert "--run-label" in train_py
+    assert "--output-root" in train_py
+    assert "--work-dir" in train_py
 
     cfg = (ROOT / "configs" / "adaocc" / "radio_occscannet_mini.py").read_text()
     assert 'dataset_root = str(_repo_root / "data" / "OccScanNet")' in cfg

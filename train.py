@@ -42,6 +42,26 @@ def main():
     parser.add_argument('--override', nargs='+', action=DictAction)
     parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument('--world_size', type=int, default=1)
+    parser.add_argument(
+        '--output-root',
+        default=None,
+        help='Root directory for new training outputs. Defaults to cfg.output_root, then outputs/.',
+    )
+    parser.add_argument(
+        '--work-dir',
+        default=None,
+        help='Exact work directory for this run. Overrides the timestamped output layout.',
+    )
+    parser.add_argument(
+        '--run-label',
+        default=None,
+        help='Optional label appended to the timestamped work directory.',
+    )
+    parser.add_argument(
+        '--run-timestamp',
+        default=None,
+        help='Optional timestamp string used in the timestamped work directory.',
+    )
     args = parser.parse_args()
 
     from mmdet3d.utils import register_all_modules
@@ -75,13 +95,22 @@ def main():
         if isinstance(loader_cfg, dict) and 'batch_size' in loader_cfg:
             loader_cfg['batch_size'] = max(1, loader_cfg['batch_size'] // world_size)
 
-    run_timestamp = os.environ.get('ADAOCC_RUN_TIMESTAMP')
+    run_timestamp = args.run_timestamp or os.environ.get('ADAOCC_RUN_TIMESTAMP')
     if not run_timestamp:
         run_timestamp = time.strftime('%Y-%m-%d/%H-%M-%S', time.localtime())
-    run_label = _normalize_run_label(os.environ.get('ADAOCC_RUN_LABEL', ''))
+    if args.run_label is None:
+        run_label = _normalize_run_label(os.environ.get('ADAOCC_RUN_LABEL', ''))
+    else:
+        run_label = _normalize_run_label(args.run_label)
 
     repo_root = os.environ.get('ADAOCC_REPO_ROOT') or osp.dirname(osp.abspath(__file__))
     repo_root = osp.abspath(osp.expanduser(repo_root))
+
+    def _resolve_output_path(path):
+        path = osp.expanduser(str(path))
+        if not osp.isabs(path):
+            path = osp.join(repo_root, path)
+        return path
 
     resume_from = cfg.get('resume_from', None)
     if resume_from:
@@ -90,14 +119,20 @@ def main():
         cfg.work_dir = osp.dirname(resume_from)
         cfg.load_from = resume_from
         cfg.resume = True
+    elif args.work_dir:
+        cfg.work_dir = _resolve_output_path(args.work_dir)
+        cfg.resume = False
     else:
         config_name = osp.splitext(osp.split(args.config)[-1])[0]
         date_part, time_part = _split_run_timestamp(run_timestamp)
         run_root = f'{date_part}_{config_name}'
-        output_root = cfg.get('output_root', None) or os.environ.get('ADAOCC_OUTPUT_ROOT') or osp.join(repo_root, 'outputs')
-        output_root = osp.expanduser(str(output_root))
-        if not osp.isabs(output_root):
-            output_root = osp.join(repo_root, output_root)
+        output_root = (
+            args.output_root
+            or cfg.get('output_root', None)
+            or os.environ.get('ADAOCC_OUTPUT_ROOT')
+            or osp.join(repo_root, 'outputs')
+        )
+        output_root = _resolve_output_path(output_root)
         output_subdir = cfg.get('output_subdir', None)
         if output_subdir:
             cfg.work_dir = osp.join(output_root, cfg.model['type'], str(output_subdir), run_root)

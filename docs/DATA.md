@@ -7,16 +7,26 @@ AdaOcc uses a fixed repository-relative runtime root: `data/OccScanNet`. The rep
 Arrange local files under this ignored tree:
 
 ```text
-data/OccScanNet/
-├── train_occscannet_mini.pkl
-├── val_occscannet_mini.pkl
-├── test_occscannet_mini.pkl
-├── train_subscenes.txt                         # needed only if regenerating PKLs
-├── val_subscenes.txt                           # needed only if regenerating PKLs
-├── gathered_data/<scene>/<frame>.pkl
-├── posed_images/<scene>/<frame>.jpg
-├── gts_camvisbits/<scene>/<frame>/labels.npz
-└── depth_splatssc_stage1_ftdav2_vitb_20m_full/<scene>/<frame>.png  # optional precomputed depth
+data/
+└── OccScanNet/
+    ├── train_occscannet_mini.pkl
+    ├── val_occscannet_mini.pkl
+    ├── test_occscannet_mini.pkl
+    ├── train_subscenes.txt                         # needed only if regenerating PKLs
+    ├── val_subscenes.txt                           # needed only if regenerating PKLs
+    ├── gathered_data/
+    │   └── <scene>/
+    │       └── <frame>.pkl
+    ├── posed_images/
+    │   └── <scene>/
+    │       └── <frame>.jpg
+    ├── gts_camvisbits/
+    │   └── <scene>/
+    │       └── <frame>/
+    │           └── labels.npz
+    └── depth_splatssc_stage1_ftdav2_vitb_20m_full/  # optional precomputed depth
+        └── <scene>/
+            └── <frame>.png
 ```
 
 The three PKLs are indexes. Their paths are relative to `data/OccScanNet`.
