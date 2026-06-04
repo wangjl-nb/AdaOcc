@@ -79,13 +79,29 @@ For optional precomputed-depth training/eval, generate or provide:
 depth_splatssc_stage1_ftdav2_vitb_20m_full/<scene>/<frame>.png
 ```
 
+Generate the tree from mini PKLs and posed images with:
+
+```bash
+python scripts/generate_occscannet_mini_depth_da_v2.py \
+  --data-root data/OccScanNet \
+  --weights pretrain/depth_anything/finetune_scannet_depthanythingv2.pth
+
+python scripts/generate_occscannet_mini_depth_da_v2.py \
+  --data-root data/OccScanNet \
+  --verify-only
+```
+
+The generation script writes to the `depth_path` stored in each mini pkl camera record. By default this is `depth_splatssc_stage1_ftdav2_vitb_20m_full/<scene>/<frame>.png`. Existing files are skipped unless `--overwrite` is used. Use `--limit N` for a small smoke run.
+
 These PNGs are binary depth containers. Each pixel stores one `float32` metric-depth value in meters. The file is written by casting the depth map to little-endian float32 (`<f4`) and viewing each 4-byte float as RGBA `uint8` channels (`H x W x 4`). On load, AdaOcc reads the raw RGBA bytes and views them back as `<f4`. Do not convert, resize, color-map, or re-save these PNGs as normal images.
 
-Verify with:
+Verify the final data tree with:
 
 ```bash
 python scripts/check_assets.py --precomputed-depth --verify-depth-png
 ```
+
+Use precomputed-depth mode by setting `ADAOCC_ONLINE_DEPTH=0` for both training and evaluation.
 
 ## Asset check
 

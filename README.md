@@ -25,7 +25,7 @@ Released epoch-200 OccScanNet-mini validation result:
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | 58.49 | 65.49 | 47.80 | 57.61 | 56.41 | 48.26 | 59.09 | 75.04 | 75.29 | 57.78 | 43.56 | 64.60 | 57.99 |
 
-Expected reproduction tolerance is about ±0.5 for `mIoU` / `IoU`. See `docs/REPRODUCIBILITY.md` for the reference config, smoke checks, and metric tolerance.
+Expected reproduction tolerance is about ±0.5 for `mIoU` / `IoU`. See [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md) for the reference config, smoke checks, and metric tolerance.
 
 ## 1. Start from OccScanNet
 
@@ -50,7 +50,7 @@ mkdir -p data
 ln -s /path/to/OccScanNet data/OccScanNet
 ```
 
-At this point, `train_occscannet_mini.pkl`, `gts_camvisbits/`, and optional precomputed depth PNGs may not exist yet; they are generated in Step 4. See `docs/DATA.md` for label keys, raw-axis convention, and depth PNG details.
+At this point, `train_occscannet_mini.pkl`, `gts_camvisbits/`, and optional precomputed depth PNGs may not exist yet; they are generated in Step 4. See [`docs/DATA.md`](docs/DATA.md) for label keys, raw-axis convention, and depth PNG details.
 
 ## 2. Put weights/checkpoints in fixed paths
 
@@ -102,7 +102,7 @@ Place the Depth-Anything checkpoint manually at:
 pretrain/depth_anything/finetune_scannet_depthanythingv2.pth
 ```
 
-If you prefer the full OPUS-generated fusion pretrain instead of the slim AdaOcc file, place it at the same target path: `pretrain/fusion_pretrain_model.pth`. See `docs/LICENSE_AND_ASSETS.md` for upstream asset routes, attribution notes, and OPUS extraction details.
+If you prefer the full OPUS-generated fusion pretrain instead of the slim AdaOcc file, place it at the same target path: `pretrain/fusion_pretrain_model.pth`. See [`docs/LICENSE_AND_ASSETS.md`](docs/LICENSE_AND_ASSETS.md) for upstream asset routes, attribution notes, and OPUS extraction details.
 
 ## 3. Create the environment
 
@@ -136,7 +136,7 @@ python setup.py build_ext --inplace
 cd ../..
 ```
 
-Do not set `CUDA_VISIBLE_DEVICES` or NCCL variables in the scripts unless your machine or cluster specifically requires them. See `docs/INSTALL.md` for the tested stack, MMCV/MSMV build notes, and CUDA mismatch fallback guidance; `docs/ENVIRONMENT_SETUP.md` is a short environment checklist.
+Do not set `CUDA_VISIBLE_DEVICES` or NCCL variables in the scripts unless your machine or cluster specifically requires them. See [`docs/INSTALL.md`](docs/INSTALL.md) for the tested stack, MMCV/MSMV build notes, and CUDA mismatch fallback guidance; [`docs/ENVIRONMENT_SETUP.md`](docs/ENVIRONMENT_SETUP.md) is a short environment checklist.
 
 ## 4. Generate AdaOcc data files
 
@@ -161,14 +161,19 @@ python scripts/generate_occscannet_mini_gts_camvisbits.py --data-root data/OccSc
 python scripts/generate_occscannet_mini_gts_camvisbits.py --data-root data/OccScanNet --verify-only
 ```
 
-Default online-depth training does not need precomputed depth PNGs. To generate the optional precomputed-depth tree:
+Default online-depth training does not need precomputed depth PNGs. For the optional precomputed-depth mode, first generate the depth tree with the same Depth-Anything-V2 checkpoint used by online depth:
 
 ```bash
 python scripts/generate_occscannet_mini_depth_da_v2.py \
   --data-root data/OccScanNet \
   --weights pretrain/depth_anything/finetune_scannet_depthanythingv2.pth
-python scripts/generate_occscannet_mini_depth_da_v2.py --data-root data/OccScanNet --verify-only
+
+python scripts/generate_occscannet_mini_depth_da_v2.py \
+  --data-root data/OccScanNet \
+  --verify-only
 ```
+
+The script reads the mini PKLs, loads `CAM_FRONT` images, writes depth to each pkl-referenced `cam["depth_path"]`, and skips existing files unless `--overwrite` is passed. Use `--limit N` for a small generation smoke test, or `--device cuda:0` / `--device cpu` to choose the inference device.
 
 Precomputed depth PNGs are binary depth containers, not visual images: each pixel is one little-endian `float32` meter value stored as four uint8 PNG channels (`H x W x 4`). Do not convert, resize, color-map, or re-save them with image editors.
 
@@ -178,7 +183,7 @@ Check assets:
 python scripts/check_assets.py --online-depth
 ```
 
-Use `--precomputed-depth --verify-depth-png` for the optional precomputed-depth mode. More data-generation details are in `docs/DATA.md`.
+Use `--precomputed-depth --verify-depth-png` for the optional precomputed-depth mode. More data-generation details are in [`docs/DATA.md`](docs/DATA.md).
 
 ## 5. Final expected layout
 
@@ -255,17 +260,27 @@ ADAOCC_DISABLE_MSMV_CUDA=1 \
   checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth
 ```
 
-For optional precomputed-depth training, add `ADAOCC_ONLINE_DEPTH=0` and make sure `depth_splatssc_stage1_ftdav2_vitb_20m_full/` exists.
+For optional precomputed-depth training/eval, make sure `depth_splatssc_stage1_ftdav2_vitb_20m_full/` exists and set `ADAOCC_ONLINE_DEPTH=0` for both commands:
 
-`dist_train.sh` and `dist_val.sh` intentionally do not export CUDA, NCCL, Hugging Face, or AdaOcc path variables internally. They only call `torch.distributed.run` with the requested GPU count, config, and remaining arguments. Use `train.py` arguments such as `--run-label`, `--output-root`, or `--work-dir` for run placement; use command-prefix environment variables only for explicit mode switches such as `ADAOCC_DISABLE_MSMV_CUDA=1` or `ADAOCC_ONLINE_DEPTH=0`. See `docs/ARCHITECTURE.md` for the online-depth/RADIO/TPV data flow and query schedule; `docs/DEPENDENCY_TRACE.md` maps major code modules.
+```bash
+ADAOCC_ONLINE_DEPTH=0 ADAOCC_DISABLE_MSMV_CUDA=1 \
+./dist_train.sh 8 configs/adaocc/radio_occscannet_mini.py \
+  --run-label precomputed-depth-mini
+
+ADAOCC_ONLINE_DEPTH=0 ADAOCC_DISABLE_MSMV_CUDA=1 \
+./dist_val.sh 8 configs/adaocc/radio_occscannet_mini.py \
+  checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth
+```
+
+`dist_train.sh` and `dist_val.sh` intentionally do not export CUDA, NCCL, Hugging Face, or AdaOcc path variables internally. They only call `torch.distributed.run` with the requested GPU count, config, and remaining arguments. Use `train.py` arguments such as `--run-label`, `--output-root`, or `--work-dir` for run placement; use command-prefix environment variables only for explicit mode switches such as `ADAOCC_DISABLE_MSMV_CUDA=1` or `ADAOCC_ONLINE_DEPTH=0`. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the online-depth/RADIO/TPV data flow and query schedule; [`docs/DEPENDENCY_TRACE.md`](docs/DEPENDENCY_TRACE.md) maps major code modules.
 
 ## More details
 
-- `docs/INSTALL.md` / `docs/ENVIRONMENT_SETUP.md`: environment and optional CUDA extension notes
-- `docs/DATA.md`: PKLs, label fields, raw-axis convention, and depth PNG format
-- `docs/ARCHITECTURE.md`: RADIO, online depth, TPV, and query schedule
-- `docs/REPRODUCIBILITY.md`: smoke/full reproduction checklist and reference metrics
-- `docs/LICENSE_AND_ASSETS.md`: upstream assets, licenses, and citations
-- `docs/DEPENDENCY_TRACE.md`: major code-module map
+- [`docs/INSTALL.md`](docs/INSTALL.md) / [`docs/ENVIRONMENT_SETUP.md`](docs/ENVIRONMENT_SETUP.md): environment and optional CUDA extension notes
+- [`docs/DATA.md`](docs/DATA.md): PKLs, label fields, raw-axis convention, and depth PNG format
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): RADIO, online depth, TPV, and query schedule
+- [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md): smoke/full reproduction checklist and reference metrics
+- [`docs/LICENSE_AND_ASSETS.md`](docs/LICENSE_AND_ASSETS.md): upstream assets, licenses, and citations
+- [`docs/DEPENDENCY_TRACE.md`](docs/DEPENDENCY_TRACE.md): major code-module map
 
 Please cite/acknowledge OccScanNet, ScanNet, CompleteScanNet/SCFusion if used by your data preparation, OPUS, SPlatSSC, Depth Anything V2, and RADIO according to their licenses.

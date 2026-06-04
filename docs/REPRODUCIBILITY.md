@@ -56,11 +56,25 @@ ADAOCC_DISABLE_MSMV_CUDA=1 \
 ./dist_val.sh 8 configs/adaocc/radio_occscannet_mini.py /path/to/epoch_200.pth
 ```
 
-Optional precomputed-depth mode:
+Optional precomputed-depth mode first requires generated depth PNGs:
+
+```bash
+python scripts/generate_occscannet_mini_depth_da_v2.py \
+  --data-root data/OccScanNet \
+  --weights pretrain/depth_anything/finetune_scannet_depthanythingv2.pth
+python scripts/generate_occscannet_mini_depth_da_v2.py --data-root data/OccScanNet --verify-only
+python scripts/check_assets.py --precomputed-depth --verify-depth-png
+```
+
+Then train/evaluate with online depth disabled:
 
 ```bash
 ADAOCC_ONLINE_DEPTH=0 ADAOCC_DISABLE_MSMV_CUDA=1 \
-./dist_train.sh 8 configs/adaocc/radio_occscannet_mini.py
+./dist_train.sh 8 configs/adaocc/radio_occscannet_mini.py \
+  --run-label precomputed-depth-mini
+
+ADAOCC_ONLINE_DEPTH=0 ADAOCC_DISABLE_MSMV_CUDA=1 \
+./dist_val.sh 8 configs/adaocc/radio_occscannet_mini.py /path/to/epoch_200.pth
 ```
 
 Record full commands, environment versions, checkpoint path, and metrics.
