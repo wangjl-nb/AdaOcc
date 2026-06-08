@@ -10,7 +10,8 @@ import os as _os
 import sys as _sys
 from pathlib import Path as _Path
 
-_base_ = ["../shared/runtime.py"]
+default_scope = "mmdet3d"
+custom_imports = dict(imports=["models", "loaders"], allow_failed_imports=False)
 
 _config_dir = _Path("{{ fileDirname }}").resolve()
 _repo_root = _Path(_os.getenv("ADAOCC_REPO_ROOT", _config_dir.parents[1])).expanduser().resolve()

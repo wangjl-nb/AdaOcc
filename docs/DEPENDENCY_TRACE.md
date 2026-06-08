@@ -1,6 +1,6 @@
 # Dependency trace
 
-Active public config: `configs/adaocc/radio_occscannet_mini.py`.
+Active public config: `configs/occscannet/radio_occscannet_mini.py`.
 
 Key local modules:
 

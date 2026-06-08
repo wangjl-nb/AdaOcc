@@ -230,7 +230,7 @@ Import/config smoke:
 ADAOCC_DISABLE_MSMV_CUDA=1 python - <<'PY'
 import torch, mmcv, mmengine, mmdet, mmdet3d, spconv, transformers
 from mmengine.config import Config
-cfg = Config.fromfile('configs/adaocc/radio_occscannet_mini.py')
+cfg = Config.fromfile('configs/occscannet/radio_occscannet_mini.py')
 print('torch', torch.__version__, 'cuda', torch.version.cuda, torch.cuda.is_available())
 print('model', cfg.model.type, 'online_depth', cfg.model.online_depth.enabled)
 PY
@@ -240,7 +240,7 @@ One-epoch train+val smoke:
 
 ```bash
 ADAOCC_DISABLE_MSMV_CUDA=1 \
-./dist_train.sh 8 configs/adaocc/radio_occscannet_mini_smoke.py \
+./dist_train.sh 8 configs/occscannet/radio_occscannet_mini_smoke.py \
   --run-label smoke-1epoch
 ```
 
@@ -248,7 +248,7 @@ Full training:
 
 ```bash
 ADAOCC_DISABLE_MSMV_CUDA=1 \
-./dist_train.sh 8 configs/adaocc/radio_occscannet_mini.py \
+./dist_train.sh 8 configs/occscannet/radio_occscannet_mini.py \
   --run-label online-depth-mini
 ```
 
@@ -256,7 +256,7 @@ Evaluate the released checkpoint or your final checkpoint:
 
 ```bash
 ADAOCC_DISABLE_MSMV_CUDA=1 \
-./dist_val.sh 8 configs/adaocc/radio_occscannet_mini.py \
+./dist_val.sh 8 configs/occscannet/radio_occscannet_mini.py \
   checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth
 ```
 
@@ -264,11 +264,11 @@ For optional precomputed-depth training/eval, make sure `depth_splatssc_stage1_f
 
 ```bash
 ADAOCC_ONLINE_DEPTH=0 ADAOCC_DISABLE_MSMV_CUDA=1 \
-./dist_train.sh 8 configs/adaocc/radio_occscannet_mini.py \
+./dist_train.sh 8 configs/occscannet/radio_occscannet_mini.py \
   --run-label precomputed-depth-mini
 
 ADAOCC_ONLINE_DEPTH=0 ADAOCC_DISABLE_MSMV_CUDA=1 \
-./dist_val.sh 8 configs/adaocc/radio_occscannet_mini.py \
+./dist_val.sh 8 configs/occscannet/radio_occscannet_mini.py \
   checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth
 ```
 

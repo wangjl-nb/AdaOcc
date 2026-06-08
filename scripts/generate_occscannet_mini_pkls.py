@@ -9,7 +9,7 @@ Input layout expected under --data-root:
 
 The gathered_data pickle stores camera pose/intrinsics and raw occupancy labels.
 This script builds the lightweight AdaOcc index PKLs consumed by
-``configs/adaocc/radio_occscannet_mini.py``. It does not generate labels.npz;
+``configs/occscannet/radio_occscannet_mini.py``. It does not generate labels.npz;
 use ``generate_occscannet_mini_gts_camvisbits.py`` for that.
 """
 from __future__ import annotations

@@ -202,6 +202,8 @@ def test_online_depth_points_projects_and_freezes_fake_model():
 
 def test_public_wrappers_use_fixed_repo_relative_layout():
     assert not (ROOT / "configs" / "local_paths.example.sh").exists()
+    assert not (ROOT / "configs" / "current.py").exists()
+    assert not (ROOT / "configs" / "shared" / "runtime.py").exists()
     assert not (ROOT / "scripts" / "link_local_assets.sh").exists()
 
     for rel in ["dist_train.sh", "dist_val.sh"]:
@@ -217,13 +219,13 @@ def test_public_wrappers_use_fixed_repo_relative_layout():
 
     train_script = (ROOT / "dist_train.sh").read_text()
     assert 'GPUS=${1:-8}' in train_script
-    assert 'CONFIG=${2:-configs/adaocc/radio_occscannet_mini.py}' in train_script
+    assert 'CONFIG=${2:-configs/occscannet/radio_occscannet_mini.py}' in train_script
     assert '--config "$CONFIG"' in train_script
     assert '"$@"' in train_script
 
     val_script = (ROOT / "dist_val.sh").read_text()
     assert 'GPUS=${1:-8}' in val_script
-    assert 'CONFIG=${2:-configs/adaocc/radio_occscannet_mini.py}' in val_script
+    assert 'CONFIG=${2:-configs/occscannet/radio_occscannet_mini.py}' in val_script
     assert 'WEIGHT=${3:?usage: dist_val.sh GPUS CONFIG WEIGHT [MASTER_PORT]}' in val_script
 
     train_py = (ROOT / "train.py").read_text()
@@ -231,10 +233,12 @@ def test_public_wrappers_use_fixed_repo_relative_layout():
     assert "--output-root" in train_py
     assert "--work-dir" in train_py
 
-    cfg = (ROOT / "configs" / "adaocc" / "radio_occscannet_mini.py").read_text()
+    cfg = (ROOT / "configs" / "occscannet" / "radio_occscannet_mini.py").read_text()
     assert 'dataset_root = str(_repo_root / "data" / "OccScanNet")' in cfg
     assert 'train_ann_file = str(_Path(dataset_root) / "train_occscannet_mini.pkl")' in cfg
     assert 'radio_model_id = str(_repo_root / "pretrain" / "radio" / "C-RADIOv3-B")' in cfg
+    assert 'custom_imports = dict(imports=["models", "loaders"], allow_failed_imports=False)' in cfg
+    assert '_base_' not in cfg
 
 def test_msmv_fallback_disable_suppresses_optional_extension_warning():
     import pytest
