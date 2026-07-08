@@ -22,4 +22,4 @@ Key local modules:
 | Runtime | `train.py`, `val.py`, `dist_train.sh`, `dist_val.sh`, `models/runtime.py` |
 | Optional CUDA sampling | `models/csrc/*` |
 
-External packages are pinned in `environment.yml` and `requirements.txt`. The EfficientNet-B7 config additionally relies on the already listed `timm` dependency and the local checkpoint `checkpoints/tf_efficientnet_b7_ns-1dbc32de.pth`; it is not the default config.
+External packages are pinned in `environment.yml` and `requirements.txt`. The EfficientNet-B7 config additionally relies on the already listed `timm` dependency and the local weight file `pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth` from <https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/tf_efficientnet_b7_ns-1dbc32de.pth>; it is not the default config.

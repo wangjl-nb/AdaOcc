@@ -85,15 +85,13 @@ def test_check_assets_reports_missing_and_passes_online_raw_without_precomputed_
         data / "posed_images" / "scene0000_00" / "00000.png"
     )
 
-    def run_asset_check(*extra_args, checkpoints_root=None):
+    def run_asset_check(*extra_args):
         command = [
             PYTHON,
             "scripts/check_assets.py",
             "--data-root", str(data),
             "--pretrain-root", str(pretrain),
         ]
-        if checkpoints_root is not None:
-            command.extend(["--checkpoints-root", str(checkpoints_root)])
         command.extend(extra_args)
         command.append("--json")
         result = run_cmd(command)
@@ -126,18 +124,18 @@ def test_check_assets_reports_missing_and_passes_online_raw_without_precomputed_
     assert payload["mode"]["radio"] is True
     assert any(item["kind"] == "radio" for item in payload["missing"])
 
-    checkpoints = tmp_path / "checkpoints"
-    result, payload = run_asset_check("--efficientnet-b7", checkpoints_root=checkpoints)
+    result, payload = run_asset_check("--efficientnet-b7")
     assert result.returncode != 0
     assert payload["mode"]["radio"] is False
     assert payload["mode"]["efficientnet_b7"] is True
-    assert payload["checkpoints_root"] == str(checkpoints.resolve())
     assert any(item["kind"] == "efficientnet_b7_checkpoint" for item in payload["missing"])
+    assert any(item["path"].endswith("pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth") for item in payload["missing"])
     assert not any(item["kind"] == "radio" for item in payload["missing"])
+    assert all(key != "checkpoints" + "_root" for key in payload)
 
-    checkpoints.mkdir()
-    (checkpoints / "tf_efficientnet_b7_ns-1dbc32de.pth").write_bytes(b"stub")
-    result, payload = run_asset_check("--efficientnet-b7", checkpoints_root=checkpoints)
+    (pretrain / "timm").mkdir()
+    (pretrain / "timm" / "tf_efficientnet_b7_ns-1dbc32de.pth").write_bytes(b"stub")
+    result, payload = run_asset_check("--efficientnet-b7")
     assert result.returncode == 0, result.stderr + result.stdout
     assert payload["ok"] is True
     assert payload["mode"]["radio"] is False
@@ -309,7 +307,16 @@ def test_public_docs_describe_config_choice_and_depth_defaults():
 
     assert "RADIO remains the released/reference baseline" in readme
     assert "EfficientNet-B7 additional option" in readme
+    assert "pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth" in readme
+    assert "wget -O pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth" in readme
+    assert "https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/tf_efficientnet_b7_ns-1dbc32de.pth" in readme
+    assert "pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth" in data_doc
+    assert "pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth" in repro
+    assert "pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth" in arch
+    assert "pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth" in dep
+    assert "pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth" in license_doc
     assert "tf_efficientnet_b7_ns-1dbc32de.pth" in readme
+    assert "https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/tf_efficientnet_b7_ns-1dbc32de.pth" in license_doc
     assert "tf_efficientnet_b7_ns-1dbc32de.pth" in license_doc
     assert "--efficientnet-b7" in readme
     assert "--radio" in readme
@@ -414,6 +421,7 @@ def test_efficientnet_config_and_lazy_timm_contracts():
     assert "models.backbones.timm_feature_backbone" not in radio_text
     assert "_base_" not in eff_text
     assert "TimmFeatureBackbone" in eff_text
+    assert 'pretrain" / "timm" / "tf_efficientnet_b7_ns-1dbc32de.pth"' in eff_text
     assert "tf_efficientnet_b7_ns-1dbc32de.pth" in eff_text
     assert 'norm_type="imagenet"' in eff_text
     assert "patch_size=16" in eff_text
@@ -440,7 +448,7 @@ def test_efficientnet_checkpoint_prefix_policy_covers_local_checkpoint():
     import pytest
 
     torch = pytest.importorskip("torch")
-    checkpoint = ROOT / "checkpoints" / "tf_efficientnet_b7_ns-1dbc32de.pth"
+    checkpoint = ROOT / "pretrain" / "timm" / "tf_efficientnet_b7_ns-1dbc32de.pth"
     if not checkpoint.exists():
         pytest.skip("EfficientNet checkpoint is not available")
 

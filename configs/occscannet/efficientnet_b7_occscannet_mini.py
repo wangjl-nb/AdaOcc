@@ -40,7 +40,7 @@ test_ann_file = str(_Path(dataset_root) / "test_occscannet_mini.pkl")
 load_from = str(_repo_root / "pretrain" / "fusion_pretrain_model.pth")
 radio_model_id = str(_repo_root / "pretrain" / "radio" / "C-RADIOv3-B")
 radio_local_files_only = True
-efficientnet_checkpoint_path = str(_repo_root / "checkpoints" / "tf_efficientnet_b7_ns-1dbc32de.pth")
+efficientnet_checkpoint_path = str(_repo_root / "pretrain" / "timm" / "tf_efficientnet_b7_ns-1dbc32de.pth")
 output_root = str(_repo_root / "outputs")
 depth_anything_model_path = str(
     _repo_root / "pretrain" / "depth_anything" / "finetune_scannet_depthanythingv2.pth"

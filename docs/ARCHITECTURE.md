@@ -14,7 +14,7 @@ Public OccScanNet-mini image-encoder configs:
 | config | image backbone | checkpoint/cache | backbone training policy |
 | --- | --- | --- | --- |
 | `configs/occscannet/radio_occscannet_mini.py` | `RADIOHFBackbone` for `nvidia/C-RADIOv3-B` | `pretrain/radio/C-RADIOv3-B/` | RADIO is mostly frozen, with `unfreeze_last_n_blocks=4` so the final RADIO blocks are trainable. |
-| `configs/occscannet/efficientnet_b7_occscannet_mini.py` | `TimmFeatureBackbone` for `tf_efficientnet_b7_ns` | `checkpoints/tf_efficientnet_b7_ns-1dbc32de.pth` | EfficientNet-B7 backbone weights are frozen. |
+| `configs/occscannet/efficientnet_b7_occscannet_mini.py` | `TimmFeatureBackbone` for `tf_efficientnet_b7_ns` | `pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth` | EfficientNet-B7 backbone weights are frozen. |
 
 RADIO remains the released/reference baseline. EfficientNet-B7 is an additional config option that swaps the image backbone path; it does not rewrite the decoder, TPV branch, or query schedule.
 

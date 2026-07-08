@@ -7,7 +7,7 @@ AdaOcc public reproduction is config-selected. Choose one full config and its ma
 | choice | full config | smoke config | notes |
 | --- | --- | --- | --- |
 | RADIO released/reference baseline | `configs/occscannet/radio_occscannet_mini.py` | `configs/occscannet/radio_occscannet_mini_smoke.py` | Use this for the released checkpoint/metrics. |
-| EfficientNet-B7 additional image encoder option | `configs/occscannet/efficientnet_b7_occscannet_mini.py` | `configs/occscannet/efficientnet_b7_occscannet_mini_smoke.py` | Requires `checkpoints/tf_efficientnet_b7_ns-1dbc32de.pth`; no released metrics are claimed here. |
+| EfficientNet-B7 additional image encoder option | `configs/occscannet/efficientnet_b7_occscannet_mini.py` | `configs/occscannet/efficientnet_b7_occscannet_mini_smoke.py` | Requires `pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth`; no released metrics are claimed here. |
 
 Example shell selection:
 

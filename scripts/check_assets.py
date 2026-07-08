@@ -30,6 +30,7 @@ DEFAULT_SPLITS = [
     "test_occscannet_mini.pkl",
 ]
 EFFICIENTNET_B7_CHECKPOINT = "tf_efficientnet_b7_ns-1dbc32de.pth"
+EFFICIENTNET_B7_DIR = "timm"
 RADIO_MODEL_DIR = "radio/C-RADIOv3-B"
 REQUIRED_LABEL_KEYS = [
     "semantics",
@@ -239,13 +240,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-root", default="data/OccScanNet")
     parser.add_argument("--pretrain-root", default="pretrain")
-    parser.add_argument("--checkpoints-root", default="checkpoints")
     parser.add_argument("--splits", nargs="+", default=DEFAULT_SPLITS)
     parser.add_argument("--online-depth", action="store_true", help="Require online DepthAnything checkpoint")
     parser.add_argument("--precomputed-depth", action="store_true", help="Require pkl-referenced precomputed depth PNGs")
     parser.add_argument("--raw-depth-from-images", action="store_true", help="Require same-stem raw uint depth PNGs next to posed_images RGB files")
     parser.add_argument("--radio", action="store_true", help=f"Require pretrain/{RADIO_MODEL_DIR} for the RADIO config")
-    parser.add_argument("--efficientnet-b7", action="store_true", help=f"Require checkpoints/{EFFICIENTNET_B7_CHECKPOINT} for the EfficientNet-B7 config")
+    parser.add_argument("--efficientnet-b7", action="store_true", help=f"Require pretrain/{EFFICIENTNET_B7_DIR}/{EFFICIENTNET_B7_CHECKPOINT} for the EfficientNet-B7 config")
     parser.add_argument("--verify-depth-png", action="store_true", help="Decode required depth PNGs")
     parser.add_argument("--raw-depth-scale", type=float, default=1000.0, help="Scale for raw uint depth PNGs, e.g. 1000 for millimeters")
     parser.add_argument("--max-missing-report", type=int, default=50)
@@ -255,7 +255,6 @@ def main() -> int:
 
     data_root = Path(args.data_root).expanduser().resolve()
     pretrain_root = Path(args.pretrain_root).expanduser().resolve()
-    checkpoints_root = Path(args.checkpoints_root).expanduser().resolve()
     missing: List[dict] = []
     require_radio = bool(args.radio or not args.efficientnet_b7)
 
@@ -271,8 +270,9 @@ def main() -> int:
         add_missing(missing, "pretrain", pretrain_root / "fusion_pretrain_model.pth")
     if args.online_depth and not (pretrain_root / "depth_anything" / "finetune_scannet_depthanythingv2.pth").exists():
         add_missing(missing, "depth_anything_ckpt", pretrain_root / "depth_anything" / "finetune_scannet_depthanythingv2.pth")
-    if args.efficientnet_b7 and not (checkpoints_root / EFFICIENTNET_B7_CHECKPOINT).exists():
-        add_missing(missing, "efficientnet_b7_checkpoint", checkpoints_root / EFFICIENTNET_B7_CHECKPOINT)
+    efficientnet_b7_path = pretrain_root / EFFICIENTNET_B7_DIR / EFFICIENTNET_B7_CHECKPOINT
+    if args.efficientnet_b7 and not efficientnet_b7_path.exists():
+        add_missing(missing, "efficientnet_b7_checkpoint", efficientnet_b7_path)
 
     local_radio = pretrain_root / RADIO_MODEL_DIR
     if require_radio and not local_radio.exists():
@@ -298,7 +298,6 @@ def main() -> int:
         "ok": len(missing) == 0,
         "data_root": str(data_root),
         "pretrain_root": str(pretrain_root),
-        "checkpoints_root": str(checkpoints_root),
         "mode": {
             "online_depth": bool(args.online_depth),
             "precomputed_depth": bool(args.precomputed_depth),

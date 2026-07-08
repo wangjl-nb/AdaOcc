@@ -63,7 +63,7 @@ At this point, `train_occscannet_mini.pkl` and `gts_camvisbits/` may not exist y
 
 ## 2. Put weights/checkpoints in fixed paths
 
-AdaOcc configs use repo-relative paths, so place weights exactly under `pretrain/` and `checkpoints/`.
+AdaOcc configs use repo-relative paths, so place external weights under `pretrain/` and the released AdaOcc model checkpoint under `checkpoints/`.
 
 Assets:
 
@@ -71,7 +71,7 @@ Assets:
 | --- | --- | --- |
 | OccScanNet | <https://huggingface.co/datasets/hongxiaoy/OccScanNet> | `data/OccScanNet/` |
 | RADIO | <https://huggingface.co/nvidia/C-RADIOv3-B> | `pretrain/radio/C-RADIOv3-B/` |
-| EfficientNet-B7 checkpoint, required only for the EfficientNet-B7 config | timm/Noisy Student `tf_efficientnet_b7_ns` checkpoint | `checkpoints/tf_efficientnet_b7_ns-1dbc32de.pth` |
+| EfficientNet-B7 weight file, required only for the EfficientNet-B7 config | <https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/tf_efficientnet_b7_ns-1dbc32de.pth> | `pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth` |
 | Depth-Anything FT checkpoint, optional for `ADAOCC_ONLINE_DEPTH=1` or generated-depth mode | <https://huggingface.co/YkiWu/EmbodiedOcc/blob/main/finetune_scannet_depthanythingv2.pth>; also used by <https://github.com/Made-Gpt/SplatSSC> as FT-DaV2 | `pretrain/depth_anything/finetune_scannet_depthanythingv2.pth` |
 | AdaOcc fusion pretrain | <https://huggingface.co/wjldragon/AdaOcc/blob/main/pretrain/fusion_pretrain_model.pth> or full OPUS pretrain from <https://github.com/jbwang1997/OPUS> | `pretrain/fusion_pretrain_model.pth` |
 | Released AdaOcc model checkpoint | <https://huggingface.co/wjldragon/AdaOcc/blob/main/checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth> | `checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth` |
@@ -106,10 +106,11 @@ Download RADIO locally:
 hf download nvidia/C-RADIOv3-B --local-dir pretrain/radio/C-RADIOv3-B
 ```
 
-If you choose the EfficientNet-B7 config, also place its timm checkpoint at:
+If you choose the EfficientNet-B7 config, download its weight file to `pretrain/timm`:
 
-```text
-checkpoints/tf_efficientnet_b7_ns-1dbc32de.pth
+```bash
+mkdir -p pretrain/timm; wget -O pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth \
+  https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/tf_efficientnet_b7_ns-1dbc32de.pth
 ```
 
 For `ADAOCC_ONLINE_DEPTH=1` or generated precomputed-depth mode, place the Depth-Anything checkpoint manually at:
@@ -201,7 +202,7 @@ Check assets:
 python scripts/check_assets.py --radio --raw-depth-from-images --verify-depth-png
 ```
 
-Use `--radio` for the RADIO config asset. Use `--efficientnet-b7` instead when checking the EfficientNet-B7 config asset; that requires only `checkpoints/tf_efficientnet_b7_ns-1dbc32de.pth` and does not require RADIO. Omitting both image-encoder flags keeps the backwards-compatible RADIO check. Use `--online-depth` for the optional online Depth-Anything mode, or `--precomputed-depth --verify-depth-png` for the optional generated-depth mode. More data-generation details are in [`docs/DATA.md`](docs/DATA.md).
+Use `--radio` for the RADIO config asset. Use `--efficientnet-b7` instead when checking the EfficientNet-B7 config asset; that requires only `pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth` and does not require RADIO. Omitting both image-encoder flags keeps the backwards-compatible RADIO check. Use `--online-depth` for the optional online Depth-Anything mode, or `--precomputed-depth --verify-depth-png` for the optional generated-depth mode. More data-generation details are in [`docs/DATA.md`](docs/DATA.md).
 
 ## 5. Final expected layout
 
@@ -234,11 +235,12 @@ AdaOcc/
 │   ├── fusion_pretrain_model.pth
 │   ├── depth_anything/
 │   │   └── finetune_scannet_depthanythingv2.pth
+│   ├── timm/
+│   │   └── tf_efficientnet_b7_ns-1dbc32de.pth  # only for EfficientNet-B7 config
 │   └── radio/
 │       └── C-RADIOv3-B/
 ├── checkpoints/
-│   ├── adaocc_online_depth_occscannet_mini_epoch200.pth
-│   └── tf_efficientnet_b7_ns-1dbc32de.pth  # only for EfficientNet-B7 config
+│   └── adaocc_online_depth_occscannet_mini_epoch200.pth
 └── outputs/
 ```
 
@@ -249,7 +251,7 @@ All smoke/train/eval commands below take a config path. Choose one image encoder
 | choice | full config | smoke config | extra asset |
 | --- | --- | --- | --- |
 | RADIO released/reference baseline | `configs/occscannet/radio_occscannet_mini.py` | `configs/occscannet/radio_occscannet_mini_smoke.py` | `pretrain/radio/C-RADIOv3-B/` |
-| EfficientNet-B7 additional option | `configs/occscannet/efficientnet_b7_occscannet_mini.py` | `configs/occscannet/efficientnet_b7_occscannet_mini_smoke.py` | `checkpoints/tf_efficientnet_b7_ns-1dbc32de.pth` |
+| EfficientNet-B7 additional option | `configs/occscannet/efficientnet_b7_occscannet_mini.py` | `configs/occscannet/efficientnet_b7_occscannet_mini_smoke.py` | `pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth` |
 
 RADIO remains the released/reference baseline and is the config to use with the released checkpoint/metrics above. EfficientNet-B7 changes the config-selected `img_encoder.image_backbone_cfg`; it is not a new default and this README does not claim EfficientNet reproduction metrics.
 
