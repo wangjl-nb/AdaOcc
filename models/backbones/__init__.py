@@ -6,13 +6,18 @@ _BACKBONE_MODULES = {
     'ModularOccEncoder': 'modular_occ_encoder',
     'RADIOHFBackbone': 'radiov4_hf_backbone',
     'RADIOv4HFBackbone': 'radiov4_hf_backbone',
+    'TimmFeatureBackbone': 'timm_feature_backbone',
 }
+_LAZY_ONLY_BACKBONES = {'TimmFeatureBackbone'}
 
 _LIGHTWEIGHT_IMPORT = str(
     os.environ.get('ADAOCC_IMPORT_LIGHTWEIGHT', '')).lower() in ('1', 'true', 'yes', 'on')
 _EAGER_IMPORTS = ['ModularOccEncoder', 'RADIOHFBackbone', 'RADIOv4HFBackbone']
 if not _LIGHTWEIGHT_IMPORT:
-    _EAGER_IMPORTS = list(_BACKBONE_MODULES.keys())
+    _EAGER_IMPORTS = [
+        name for name in _BACKBONE_MODULES
+        if name not in _LAZY_ONLY_BACKBONES
+    ]
 
 
 def _load_backbone(name):
@@ -36,4 +41,5 @@ __all__ = [
     'ModularOccEncoder',
     'RADIOHFBackbone',
     'RADIOv4HFBackbone',
+    'TimmFeatureBackbone',
 ]

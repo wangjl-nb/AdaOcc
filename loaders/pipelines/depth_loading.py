@@ -11,6 +11,7 @@ except Exception:  # pragma: no cover
 from ._shared import (
     _build_cam_lookup,
     _depth_candidates_from_image,
+    _load_depth_png,
     _load_rgba_depth,
     _path_keys,
     _resolve_depth_path,
@@ -36,9 +37,14 @@ class LoadPointsFromMultiViewDepth:
                  depth_min=0.1,
                  depth_max=80.0,
                  coord_convention='opencv',
+                 depth_format='adaocc_rgba_float32',
+                 raw_depth_scale=1000.0,
+                 scale_intrinsic_to_depth=False,
                  intensity_value=0.0,
                  strict_depth_exist=False,
                  fallback_depth_from_image_path=True,
+                 fallback_same_stem_depth_from_image=False,
+                 prefer_same_stem_depth_from_image=False,
                  history_dynamic_extrinsics=True,
                  dynamic_extrinsics_fallback='static',
                  output_view_ids_key='depth_point_view_ids'):
@@ -65,18 +71,60 @@ class LoadPointsFromMultiViewDepth:
         self.depth_min = float(depth_min)
         self.depth_max = float(depth_max)
         self.coord_convention = coord_convention
+        self.depth_format = str(depth_format)
+        self.raw_depth_scale = float(raw_depth_scale)
+        self.scale_intrinsic_to_depth = bool(scale_intrinsic_to_depth)
         self.intensity_value = float(intensity_value)
         self.strict_depth_exist = bool(strict_depth_exist)
         self.fallback_depth_from_image_path = bool(fallback_depth_from_image_path)
+        self.fallback_same_stem_depth_from_image = bool(fallback_same_stem_depth_from_image)
+        self.prefer_same_stem_depth_from_image = bool(prefer_same_stem_depth_from_image)
         self.history_dynamic_extrinsics = bool(history_dynamic_extrinsics)
         self.dynamic_extrinsics_fallback = dynamic_extrinsics_fallback
         self.output_view_ids_key = output_view_ids_key
 
     def _depth_candidates_from_image(self, image_path):
-        return _depth_candidates_from_image(image_path)
+        return _depth_candidates_from_image(
+            image_path,
+            include_same_stem=self.fallback_same_stem_depth_from_image)
 
     def _load_depth(self, depth_path):
-        return _load_rgba_depth(depth_path)
+        if self.depth_format == 'adaocc_rgba_float32':
+            return _load_rgba_depth(depth_path)
+        return _load_depth_png(
+            depth_path,
+            depth_format=self.depth_format,
+            raw_depth_scale=self.raw_depth_scale)
+
+    @staticmethod
+    def _image_hw(results, idx):
+        imgs = results.get('img', None)
+        if isinstance(imgs, list) and idx < len(imgs):
+            img = imgs[idx]
+            if hasattr(img, 'shape') and len(img.shape) >= 2:
+                return int(img.shape[0]), int(img.shape[1])
+        return None
+
+    def _maybe_scale_intrinsic_to_depth(self, cam_intrinsic, results, idx, depth_shape):
+        intrinsic = np.array(cam_intrinsic, dtype=np.float32, copy=True)
+        if not self.scale_intrinsic_to_depth:
+            return intrinsic
+        image_hw = self._image_hw(results, idx)
+        if image_hw is None:
+            return intrinsic
+        image_h, image_w = image_hw
+        depth_h, depth_w = int(depth_shape[0]), int(depth_shape[1])
+        if image_h <= 0 or image_w <= 0 or depth_h <= 0 or depth_w <= 0:
+            return intrinsic
+        if image_h == depth_h and image_w == depth_w:
+            return intrinsic
+        sx = float(depth_w) / float(image_w)
+        sy = float(depth_h) / float(image_h)
+        intrinsic[0, 0] *= sx
+        intrinsic[0, 2] *= sx
+        intrinsic[1, 1] *= sy
+        intrinsic[1, 2] *= sy
+        return intrinsic
 
     def _resolve_sample_stride(self, is_history=False):
         if is_history and self.sample_stride_history is not None:
@@ -245,13 +293,15 @@ class LoadPointsFromMultiViewDepth:
                 image_path,
                 depth_key=self.depth_key,
                 fallback_depth_from_image_path=self.fallback_depth_from_image_path,
+                fallback_same_stem_depth_from_image=self.fallback_same_stem_depth_from_image,
+                prefer_same_stem_depth_from_image=self.prefer_same_stem_depth_from_image,
             )
             if depth_path is None or (not osp.exists(depth_path)):
                 if self.strict_depth_exist:
                     raise FileNotFoundError(f'No depth file for image: {image_path}')
                 continue
 
-            depth = _load_rgba_depth(depth_path)
+            depth = self._load_depth(depth_path)
             if depth is None:
                 if self.strict_depth_exist:
                     raise FileNotFoundError(f'Failed to load depth file: {depth_path}')
@@ -259,9 +309,14 @@ class LoadPointsFromMultiViewDepth:
 
             is_history = idx >= num_views
             sample_stride = self._resolve_sample_stride(is_history=is_history)
+            cam_intrinsic = self._maybe_scale_intrinsic_to_depth(
+                cam_info['cam_intrinsic'],
+                results,
+                idx,
+                depth.shape)
             pts_cam = self._depth_to_points_camera(
                 depth,
-                cam_info['cam_intrinsic'],
+                cam_intrinsic,
                 sample_stride=sample_stride,
                 return_pixel_coords=False)
             if pts_cam.shape[0] == 0:

@@ -7,6 +7,7 @@ The repository does not redistribute these assets:
 - OccScanNet data, generated labels, generated depth maps, mini PKLs
 - OPUS fusion pretrain checkpoint
 - RADIO weights/cache
+- EfficientNet-B7/timm checkpoint (`checkpoints/tf_efficientnet_b7_ns-1dbc32de.pth`)
 - DepthAnything/SPlatSSC FT-DaV2 fine-tuned checkpoint
 - AdaOcc training checkpoints, logs, TensorBoard events, predictions
 
@@ -31,5 +32,6 @@ Useful upstream routes:
 - SPlatSSC: `https://github.com/Made-Gpt/SplatSSC`
 - Depth Anything V2: `https://github.com/DepthAnything/Depth-Anything-V2`
 - RADIO: `https://huggingface.co/nvidia/C-RADIOv3-B`
+- timm / EfficientNet-B7 Noisy Student weights for `tf_efficientnet_b7_ns`: `https://github.com/huggingface/pytorch-image-models`
 - EmbodiedOcc public FT-DaV2 checkpoint (`finetune_scannet_depthanythingv2.pth`, fine-tuned Depth Anything V2 on OccScanNet): `https://huggingface.co/YkiWu/EmbodiedOcc/blob/main/finetune_scannet_depthanythingv2.pth`
 - SPlatSSC uses the same FT-DaV2 checkpoint path in its public configuration: `https://github.com/Made-Gpt/SplatSSC`

@@ -2,10 +2,16 @@
 """Check AdaOcc release assets without modifying data.
 
 The checker validates the public reproduction layout and reports exact missing
-paths. It supports two depth modes:
+paths. It supports these depth modes:
 
 * --online-depth: DepthAnything checkpoint is required, precomputed PNGs are not.
 * --precomputed-depth: pkl-referenced depth PNGs are required and decoded.
+* --raw-depth-from-images: same-stem uint depth PNGs next to RGB images are
+  required and decoded.
+
+It also supports config-selected image-encoder asset checks. Use --radio for
+RADIO, or --efficientnet-b7 for the EfficientNet-B7 config. For backwards
+compatibility, omitting both image-encoder flags still checks RADIO.
 """
 from __future__ import annotations
 
@@ -23,6 +29,8 @@ DEFAULT_SPLITS = [
     "val_occscannet_mini.pkl",
     "test_occscannet_mini.pkl",
 ]
+EFFICIENTNET_B7_CHECKPOINT = "tf_efficientnet_b7_ns-1dbc32de.pth"
+RADIO_MODEL_DIR = "radio/C-RADIOv3-B"
 REQUIRED_LABEL_KEYS = [
     "semantics",
     "mask_lidar",
@@ -65,7 +73,7 @@ def add_missing(missing: List[dict], kind: str, path: Path, detail: str = "") ->
     missing.append({"kind": kind, "path": str(path), "detail": detail})
 
 
-def read_float_depth_png(path: Path):
+def read_float_depth_png(path: Path) -> np.ndarray | None:
     """Lightweight AdaOcc depth PNG validation.
 
     Training uses cv2.imread in the data loader. The release asset checker uses
@@ -90,6 +98,25 @@ def read_float_depth_png(path: Path):
     return depth
 
 
+def read_raw_depth_png(path: Path, raw_depth_scale: float = 1000.0) -> np.ndarray | None:
+    """Lightweight raw ScanNet uint depth PNG validation."""
+    try:
+        from PIL import Image
+    except Exception as exc:  # pragma: no cover - depends on runtime env
+        raise RuntimeError(f"Pillow is required to verify depth PNGs: {exc}") from exc
+    try:
+        with Image.open(path) as image:
+            depth_raw = np.asarray(image)
+    except Exception:
+        return None
+    if depth_raw.ndim != 2 or not np.issubdtype(depth_raw.dtype, np.integer):
+        return None
+    scale = float(raw_depth_scale)
+    if scale <= 0:
+        raise ValueError(f"raw_depth_scale must be positive, got {scale}")
+    return depth_raw.astype(np.float32) / scale
+
+
 def check_label(path: Path) -> Tuple[bool, str]:
     try:
         with np.load(path) as label:
@@ -107,12 +134,18 @@ def check_label(path: Path) -> Tuple[bool, str]:
     return True, "ok"
 
 
+def should_decode_depth_png(counts: Dict[str, int], verify_depth_png: bool, max_depth_checks: int) -> bool:
+    return verify_depth_png and (max_depth_checks <= 0 or counts["depth_decoded"] < max_depth_checks)
+
+
 def check_manifest(
     data_root: Path,
     split_paths: Iterable[Path],
     *,
     require_precomputed_depth: bool,
+    require_raw_depth_from_images: bool,
     verify_depth_png: bool,
+    raw_depth_scale: float,
     max_missing_report: int,
     max_depth_checks: int,
 ) -> Tuple[Dict[str, int], List[dict], Dict[str, dict]]:
@@ -161,21 +194,40 @@ def check_manifest(
             depth_rel = cam.get("depth_path")
             if require_precomputed_depth:
                 depth_path = resolve_path(data_root, depth_rel or "")
-                samples.setdefault("first", {}).setdefault("depth", str(depth_path))
+                samples.setdefault("first", {}).setdefault("precomputed_depth", str(depth_path))
                 if not depth_path.exists():
                     add_missing(missing, "depth", depth_path, token)
                 else:
                     counts["depth_paths_checked"] += 1
-                    should_decode = verify_depth_png and (max_depth_checks <= 0 or counts["depth_decoded"] < max_depth_checks)
-                    if should_decode:
+                    if should_decode_depth_png(counts, verify_depth_png, max_depth_checks):
                         try:
                             depth = read_float_depth_png(depth_path)
                         except Exception as exc:
                             add_missing(missing, "depth_decode", depth_path, str(exc))
                         else:
                             counts["depth_decoded"] += 1
-                            if depth is None or not np.isfinite(depth).any():
+                            if depth is None or not bool(np.isfinite(depth).any()):
                                 add_missing(missing, "depth_decode", depth_path, "not AdaOcc float32 RGBA PNG")
+            if require_raw_depth_from_images:
+                raw_depth_path = image_path.with_suffix(".png")
+                samples.setdefault("first", {}).setdefault("raw_depth", str(raw_depth_path))
+                if not raw_depth_path.exists():
+                    add_missing(missing, "raw_depth", raw_depth_path, token)
+                else:
+                    counts["depth_paths_checked"] += 1
+                    if should_decode_depth_png(counts, verify_depth_png, max_depth_checks):
+                        try:
+                            raw_depth = read_raw_depth_png(raw_depth_path, raw_depth_scale=raw_depth_scale)
+                        except Exception as exc:
+                            add_missing(missing, "raw_depth_decode", raw_depth_path, str(exc))
+                        else:
+                            counts["depth_decoded"] += 1
+                            if (
+                                raw_depth is None
+                                or not bool(np.isfinite(raw_depth).any())
+                                or not bool((raw_depth > 0).any())
+                            ):
+                                add_missing(missing, "raw_depth_decode", raw_depth_path, "not raw uint depth PNG")
             if len(missing) > max_missing_report > 0:
                 # Continue counts are less useful than responsive diagnostics once
                 # a large manifest is clearly missing assets.
@@ -187,10 +239,15 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-root", default="data/OccScanNet")
     parser.add_argument("--pretrain-root", default="pretrain")
+    parser.add_argument("--checkpoints-root", default="checkpoints")
     parser.add_argument("--splits", nargs="+", default=DEFAULT_SPLITS)
     parser.add_argument("--online-depth", action="store_true", help="Require online DepthAnything checkpoint")
     parser.add_argument("--precomputed-depth", action="store_true", help="Require pkl-referenced precomputed depth PNGs")
-    parser.add_argument("--verify-depth-png", action="store_true", help="Decode precomputed depth PNGs as float32 RGBA")
+    parser.add_argument("--raw-depth-from-images", action="store_true", help="Require same-stem raw uint depth PNGs next to posed_images RGB files")
+    parser.add_argument("--radio", action="store_true", help=f"Require pretrain/{RADIO_MODEL_DIR} for the RADIO config")
+    parser.add_argument("--efficientnet-b7", action="store_true", help=f"Require checkpoints/{EFFICIENTNET_B7_CHECKPOINT} for the EfficientNet-B7 config")
+    parser.add_argument("--verify-depth-png", action="store_true", help="Decode required depth PNGs")
+    parser.add_argument("--raw-depth-scale", type=float, default=1000.0, help="Scale for raw uint depth PNGs, e.g. 1000 for millimeters")
     parser.add_argument("--max-missing-report", type=int, default=50)
     parser.add_argument("--max-depth-checks", type=int, default=16, help="Maximum existing depth PNGs to decode when --verify-depth-png is set; 0 means decode all")
     parser.add_argument("--json", action="store_true")
@@ -198,7 +255,9 @@ def main() -> int:
 
     data_root = Path(args.data_root).expanduser().resolve()
     pretrain_root = Path(args.pretrain_root).expanduser().resolve()
+    checkpoints_root = Path(args.checkpoints_root).expanduser().resolve()
     missing: List[dict] = []
+    require_radio = bool(args.radio or not args.efficientnet_b7)
 
     if not data_root.exists():
         add_missing(missing, "data_root", data_root)
@@ -212,9 +271,11 @@ def main() -> int:
         add_missing(missing, "pretrain", pretrain_root / "fusion_pretrain_model.pth")
     if args.online_depth and not (pretrain_root / "depth_anything" / "finetune_scannet_depthanythingv2.pth").exists():
         add_missing(missing, "depth_anything_ckpt", pretrain_root / "depth_anything" / "finetune_scannet_depthanythingv2.pth")
+    if args.efficientnet_b7 and not (checkpoints_root / EFFICIENTNET_B7_CHECKPOINT).exists():
+        add_missing(missing, "efficientnet_b7_checkpoint", checkpoints_root / EFFICIENTNET_B7_CHECKPOINT)
 
-    local_radio = pretrain_root / "radio" / "C-RADIOv3-B"
-    if not local_radio.exists():
+    local_radio = pretrain_root / RADIO_MODEL_DIR
+    if require_radio and not local_radio.exists():
         add_missing(missing, "radio", local_radio)
 
     split_paths = [resolve_path(data_root, split) for split in args.splits]
@@ -222,7 +283,9 @@ def main() -> int:
         data_root,
         split_paths,
         require_precomputed_depth=bool(args.precomputed_depth),
+        require_raw_depth_from_images=bool(args.raw_depth_from_images),
         verify_depth_png=bool(args.verify_depth_png),
+        raw_depth_scale=float(args.raw_depth_scale),
         max_missing_report=max(int(args.max_missing_report), 0),
         max_depth_checks=max(int(args.max_depth_checks), 0),
     ) if data_root.exists() else ({"splits": 0, "infos": 0, "labels_checked": 0, "depth_paths_checked": 0, "depth_decoded": 0}, [], {})
@@ -235,9 +298,13 @@ def main() -> int:
         "ok": len(missing) == 0,
         "data_root": str(data_root),
         "pretrain_root": str(pretrain_root),
+        "checkpoints_root": str(checkpoints_root),
         "mode": {
             "online_depth": bool(args.online_depth),
             "precomputed_depth": bool(args.precomputed_depth),
+            "raw_depth_from_images": bool(args.raw_depth_from_images),
+            "radio": require_radio,
+            "efficientnet_b7": bool(args.efficientnet_b7),
         },
         "counts": counts,
         "samples": samples,

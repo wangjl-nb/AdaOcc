@@ -18,6 +18,8 @@ _IMAGE_NORMALIZATIONS = {
     # Kept for defensive compatibility with old configs, but AdaOcc's public
     # baseline uses only norm_type="radio".
     "dinov2": ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+    "imagenet": ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+    "timm": ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
 }
 
 

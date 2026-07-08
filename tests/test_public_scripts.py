@@ -1,6 +1,7 @@
 import json
 import os
 import pickle
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -9,6 +10,8 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 PYTHON = sys.executable
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 
 def run_cmd(args, cwd=ROOT, check=False):
@@ -67,7 +70,7 @@ def make_minimal_occscannet(root: Path):
     return data
 
 
-def test_check_assets_reports_missing_and_passes_online_without_precomputed_depth(tmp_path):
+def test_check_assets_reports_missing_and_passes_online_raw_without_precomputed_depth(tmp_path):
     data = make_minimal_occscannet(tmp_path)
     pretrain = tmp_path / "pretrain"
     (pretrain / "depth_anything").mkdir(parents=True)
@@ -75,31 +78,75 @@ def test_check_assets_reports_missing_and_passes_online_without_precomputed_dept
     (pretrain / "fusion_pretrain_model.pth").write_bytes(b"stub")
     (pretrain / "depth_anything" / "finetune_scannet_depthanythingv2.pth").write_bytes(b"stub")
     (pretrain / "radio" / "C-RADIOv3-B" / "config.json").write_text("{}")
-    result = run_cmd([
-        PYTHON,
-        "scripts/check_assets.py",
-        "--data-root", str(data),
-        "--pretrain-root", str(pretrain),
-        "--online-depth",
-        "--json",
-    ])
+    import pytest
+
+    Image = pytest.importorskip("PIL.Image")
+    Image.fromarray(np.array([[1000, 2000], [0, 3000]], dtype=np.uint16)).save(
+        data / "posed_images" / "scene0000_00" / "00000.png"
+    )
+
+    def run_asset_check(*extra_args, checkpoints_root=None):
+        command = [
+            PYTHON,
+            "scripts/check_assets.py",
+            "--data-root", str(data),
+            "--pretrain-root", str(pretrain),
+        ]
+        if checkpoints_root is not None:
+            command.extend(["--checkpoints-root", str(checkpoints_root)])
+        command.extend(extra_args)
+        command.append("--json")
+        result = run_cmd(command)
+        return result, json.loads(result.stdout)
+
+    result, payload = run_asset_check("--online-depth")
     assert result.returncode == 0, result.stderr + result.stdout
-    payload = json.loads(result.stdout)
     assert payload["ok"] is True
+    assert payload["mode"]["radio"] is True
     assert payload["counts"]["infos"] == 3
     assert not payload["missing"]
 
-    # Precomputed depth is optional for online-depth, but required when explicitly requested.
-    result = run_cmd([
-        PYTHON,
-        "scripts/check_assets.py",
-        "--data-root", str(data),
-        "--pretrain-root", str(pretrain),
-        "--precomputed-depth",
-        "--json",
-    ])
+    result, payload = run_asset_check("--raw-depth-from-images", "--verify-depth-png")
+    assert result.returncode == 0, result.stderr + result.stdout
+    assert payload["ok"] is True
+    assert payload["mode"]["raw_depth_from_images"] is True
+    assert payload["counts"]["depth_paths_checked"] == 3
+    assert payload["counts"]["depth_decoded"] == 3
+    assert payload["samples"]["first"]["raw_depth"].endswith("posed_images/scene0000_00/00000.png")
+    assert not payload["missing"]
+
+    shutil.rmtree(pretrain / "radio")
+    result, payload = run_asset_check()
     assert result.returncode != 0
-    payload = json.loads(result.stdout)
+    assert payload["mode"]["radio"] is True
+    assert any(item["kind"] == "radio" for item in payload["missing"])
+
+    result, payload = run_asset_check("--radio")
+    assert result.returncode != 0
+    assert payload["mode"]["radio"] is True
+    assert any(item["kind"] == "radio" for item in payload["missing"])
+
+    checkpoints = tmp_path / "checkpoints"
+    result, payload = run_asset_check("--efficientnet-b7", checkpoints_root=checkpoints)
+    assert result.returncode != 0
+    assert payload["mode"]["radio"] is False
+    assert payload["mode"]["efficientnet_b7"] is True
+    assert payload["checkpoints_root"] == str(checkpoints.resolve())
+    assert any(item["kind"] == "efficientnet_b7_checkpoint" for item in payload["missing"])
+    assert not any(item["kind"] == "radio" for item in payload["missing"])
+
+    checkpoints.mkdir()
+    (checkpoints / "tf_efficientnet_b7_ns-1dbc32de.pth").write_bytes(b"stub")
+    result, payload = run_asset_check("--efficientnet-b7", checkpoints_root=checkpoints)
+    assert result.returncode == 0, result.stderr + result.stdout
+    assert payload["ok"] is True
+    assert payload["mode"]["radio"] is False
+    assert payload["mode"]["efficientnet_b7"] is True
+    assert not payload["missing"]
+
+    # Precomputed depth is optional for online-depth, but required when explicitly requested.
+    result, payload = run_asset_check("--precomputed-depth")
+    assert result.returncode != 0
     assert payload["ok"] is False
     assert any(item["kind"] == "depth" for item in payload["missing"])
 
@@ -149,6 +196,7 @@ def test_online_depth_points_projects_and_freezes_fake_model():
     import pytest
 
     torch = pytest.importorskip("torch")
+    pytest.importorskip("mmengine")
     from models.adaocc.online_depth import OnlineDepthAnythingPoints
 
     class FakeDepth(torch.nn.Module):
@@ -240,10 +288,54 @@ def test_public_wrappers_use_fixed_repo_relative_layout():
     assert 'custom_imports = dict(imports=["models", "loaders"], allow_failed_imports=False)' in cfg
     assert '_base_' not in cfg
 
+
+def test_public_docs_describe_config_choice_and_depth_defaults():
+    readme = (ROOT / "README.md").read_text()
+    data_doc = (ROOT / "docs" / "DATA.md").read_text()
+    repro = (ROOT / "docs" / "REPRODUCIBILITY.md").read_text()
+    arch = (ROOT / "docs" / "ARCHITECTURE.md").read_text()
+    dep = (ROOT / "docs" / "DEPENDENCY_TRACE.md").read_text()
+    license_doc = (ROOT / "docs" / "LICENSE_AND_ASSETS.md").read_text()
+
+    for text in (readme, repro, arch, dep):
+        assert "configs/occscannet/radio_occscannet_mini.py" in text
+        assert "configs/occscannet/efficientnet_b7_occscannet_mini.py" in text
+    for text in (readme, data_doc, repro, arch):
+        assert "posed_images/<scene>/<frame>.png" in text
+        assert "ADAOCC_ONLINE_DEPTH=1" in text
+        assert "ADAOCC_RAW_DEPTH_FROM_IMAGES=0" in text
+        assert "depth_splatssc_stage1_ftdav2_vitb_20m_full" in text
+        assert "pretrain/depth_anything/finetune_scannet_depthanythingv2.pth" in text
+
+    assert "RADIO remains the released/reference baseline" in readme
+    assert "EfficientNet-B7 additional option" in readme
+    assert "tf_efficientnet_b7_ns-1dbc32de.pth" in readme
+    assert "tf_efficientnet_b7_ns-1dbc32de.pth" in license_doc
+    assert "--efficientnet-b7" in readme
+    assert "--radio" in readme
+    assert "--radio" in repro
+    assert "--efficientnet-b7" in data_doc
+    assert "--efficientnet-b7" in dep
+    assert "Default depth mode: local/raw" in repro
+    for text in (readme, repro):
+        assert "ADAOCC_ONLINE_DEPTH=1 ADAOCC_DISABLE_MSMV_CUDA=1" in text
+        assert "./dist_val.sh 8 configs/occscannet/radio_occscannet_mini.py" in text
+        assert "checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth" in text
+        assert "released checkpoint" in text
+        assert "new raw-depth" in text
+    assert "selected frozen image backbone" not in arch
+    assert "unfreeze_last_n_blocks=4" in arch
+    assert "EfficientNet-B7 backbone weights are frozen" in arch
+    assert "Default public reproduction uses online DepthAnything" not in data_doc
+    assert "Default depth mode: online DepthAnything" not in repro
+    assert "Use precomputed-depth mode by setting `ADAOCC_ONLINE_DEPTH=0`" not in data_doc
+
+
 def test_msmv_fallback_disable_suppresses_optional_extension_warning():
     import pytest
 
     pytest.importorskip("torch")
+    pytest.importorskip("mmengine")
     env = os.environ.copy()
     env["ADAOCC_DISABLE_MSMV_CUDA"] = "1"
     result = subprocess.run(
@@ -303,3 +395,73 @@ def test_extract_fusion_pretrain_converts_5d_spconv_kernel_layout():
     assert keys == ["pts_middle_encoder.conv_input.0.weight"]
     assert converted["pts_middle_encoder.conv_input.0.weight"] == ("converted", (1, 2, 3, 4, 0))
     assert converted["pts_middle_encoder.conv_input.1.weight"] is state["pts_middle_encoder.conv_input.1.weight"]
+
+
+def test_efficientnet_config_and_lazy_timm_contracts():
+    eff_cfg = ROOT / "configs" / "occscannet" / "efficientnet_b7_occscannet_mini.py"
+    smoke_cfg = ROOT / "configs" / "occscannet" / "efficientnet_b7_occscannet_mini_smoke.py"
+    radio_cfg = ROOT / "configs" / "occscannet" / "radio_occscannet_mini.py"
+    wrapper = ROOT / "models" / "backbones" / "timm_feature_backbone.py"
+    init_file = ROOT / "models" / "backbones" / "__init__.py"
+
+    eff_text = eff_cfg.read_text()
+    smoke_text = smoke_cfg.read_text()
+    radio_text = radio_cfg.read_text()
+    wrapper_text = wrapper.read_text()
+    init_text = init_file.read_text()
+
+    assert "models.backbones.timm_feature_backbone" in eff_text
+    assert "models.backbones.timm_feature_backbone" not in radio_text
+    assert "_base_" not in eff_text
+    assert "TimmFeatureBackbone" in eff_text
+    assert "tf_efficientnet_b7_ns-1dbc32de.pth" in eff_text
+    assert 'norm_type="imagenet"' in eff_text
+    assert "patch_size=16" in eff_text
+    assert "expected_output_stride=image_feature_output_divisor" in eff_text
+
+    assert "import timm" not in "\n".join(wrapper_text.splitlines()[:20])
+    assert "'TimmFeatureBackbone'" in init_text
+    assert "_LAZY_ONLY_BACKBONES" in init_text
+    assert "if name not in _LAZY_ONLY_BACKBONES" in init_text
+
+    assert "global_batch_size = 1" in smoke_text
+    assert "batch_size = 1" in smoke_text
+    assert 'type="IterBasedTrainLoop"' in smoke_text
+    assert "max_iters=1" in smoke_text
+    assert "val_cfg = None" in smoke_text
+    assert "val_dataloader = None" in smoke_text
+    assert "val_evaluator = None" in smoke_text
+    assert "_delete_=True" in smoke_text
+    assert 'type="DefaultSampler"' in smoke_text
+
+
+
+def test_efficientnet_checkpoint_prefix_policy_covers_local_checkpoint():
+    import pytest
+
+    torch = pytest.importorskip("torch")
+    checkpoint = ROOT / "checkpoints" / "tf_efficientnet_b7_ns-1dbc32de.pth"
+    if not checkpoint.exists():
+        pytest.skip("EfficientNet checkpoint is not available")
+
+    state_dict = torch.load(str(checkpoint), map_location="cpu")
+    if isinstance(state_dict, dict) and not any(str(k).startswith("conv_stem") for k in state_dict):
+        for key in ("state_dict", "model"):
+            if isinstance(state_dict.get(key), dict):
+                state_dict = state_dict[key]
+                break
+    prefixes = {str(key).split(".", 1)[0] for key in state_dict}
+    trunk_prefixes = {"conv_stem", "bn1", "blocks"}
+    post_feature_prefixes = prefixes - trunk_prefixes
+
+    wrapper_text = (ROOT / "models" / "backbones" / "timm_feature_backbone.py").read_text()
+    allowed_prefixes = {
+        item.strip().rstrip(",").strip("\"'").rstrip(".")
+        for item in wrapper_text.split("_ALLOWED_UNEXPECTED_PREFIXES = (", 1)[1]
+        .split(")", 1)[0]
+        .splitlines()
+        if item.strip().startswith(("\"", "'"))
+    }
+
+    assert trunk_prefixes.issubset(prefixes)
+    assert post_feature_prefixes.issubset(allowed_prefixes)

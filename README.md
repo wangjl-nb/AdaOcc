@@ -4,7 +4,7 @@
 
 AdaOcc is a point-based adaptive 3D semantic occupancy framework for embodied scene understanding. It represents occupied regions as sparse semantic points and supports flexible inference by adjusting query numbers or decoder depth. To handle heterogeneous embodied platforms, AdaOcc combines RGB observations with geometric cues from estimated depth maps, depth cameras, or LiDAR scans through an adaptive geometry-guided dual-branch encoder. Progressive query learning and containment-guided optimization improve the accuracy-efficiency trade-off and spatial consistency around occupied structures.
 
-This repository provides the public AdaOcc code, data-preparation scripts, and checkpoints for running the online-depth OccScanNet-mini setup. The default path predicts depth inside the model with Depth-Anything-V2; an optional precomputed-depth path is also supported.
+This repository provides the public AdaOcc code, data-preparation scripts, and checkpoints for running the OccScanNet-mini setup. The released/reference image encoder is RADIO, and EfficientNet-B7 is available as an additional config-selected image encoder option. The default depth path uses the original raw depth PNGs shipped with OccScanNet next to each RGB frame; optional online Depth-Anything-V2 and generated precomputed-depth paths are also supported.
 
 This repo contains code and docs only. It does not redistribute OccScanNet data, generated labels/depth maps, pretrained weights, checkpoints, logs, or private artifacts.
 
@@ -27,9 +27,17 @@ Released epoch-200 OccScanNet-mini validation result:
 
 Expected reproduction tolerance is about ±0.5 for `mIoU` / `IoU`. See [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md) for the reference config, smoke checks, and metric tolerance.
 
+Evaluate the released checkpoint with the RADIO config and online Depth-Anything enabled:
+
+```bash
+ADAOCC_ONLINE_DEPTH=1 ADAOCC_DISABLE_MSMV_CUDA=1 \
+./dist_val.sh 8 configs/occscannet/radio_occscannet_mini.py \
+  checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth
+```
+
 ## 1. Start from OccScanNet
 
-Download/prepare OccScanNet according to its license. Before running AdaOcc scripts, the OccScanNet root should at least contain the original mini split files, frame metadata, and posed images:
+Download/prepare OccScanNet according to its license. Before running AdaOcc scripts, the OccScanNet root should at least contain the original mini split files, frame metadata, posed images, and same-stem raw depth PNGs:
 
 ```text
 /path/to/OccScanNet/
@@ -40,7 +48,8 @@ Download/prepare OccScanNet according to its license. Before running AdaOcc scri
 │       └── <frame>.pkl
 └── posed_images/
     └── <scene>/
-        └── <frame>.jpg
+        ├── <frame>.jpg
+        └── <frame>.png
 ```
 
 Then put that root inside this repo as `data/OccScanNet`. Copying or symlinking is fine for local reproduction:
@@ -50,19 +59,20 @@ mkdir -p data
 ln -s /path/to/OccScanNet data/OccScanNet
 ```
 
-At this point, `train_occscannet_mini.pkl`, `gts_camvisbits/`, and optional precomputed depth PNGs may not exist yet; they are generated in Step 4. See [`docs/DATA.md`](docs/DATA.md) for label keys, raw-axis convention, and depth PNG details.
+At this point, `train_occscannet_mini.pkl` and `gts_camvisbits/` may not exist yet; they are generated in Step 4. The default training path reads the original `posed_images/<scene>/<frame>.png` raw depth files directly. See [`docs/DATA.md`](docs/DATA.md) for label keys, raw-axis convention, and depth PNG details.
 
 ## 2. Put weights/checkpoints in fixed paths
 
 AdaOcc configs use repo-relative paths, so place weights exactly under `pretrain/` and `checkpoints/`.
 
-Required assets:
+Assets:
 
 | asset | source | target |
 | --- | --- | --- |
 | OccScanNet | <https://huggingface.co/datasets/hongxiaoy/OccScanNet> | `data/OccScanNet/` |
 | RADIO | <https://huggingface.co/nvidia/C-RADIOv3-B> | `pretrain/radio/C-RADIOv3-B/` |
-| Depth-Anything FT checkpoint | <https://huggingface.co/YkiWu/EmbodiedOcc/blob/main/finetune_scannet_depthanythingv2.pth>; also used by <https://github.com/Made-Gpt/SplatSSC> as FT-DaV2 | `pretrain/depth_anything/finetune_scannet_depthanythingv2.pth` |
+| EfficientNet-B7 checkpoint, required only for the EfficientNet-B7 config | timm/Noisy Student `tf_efficientnet_b7_ns` checkpoint | `checkpoints/tf_efficientnet_b7_ns-1dbc32de.pth` |
+| Depth-Anything FT checkpoint, optional for `ADAOCC_ONLINE_DEPTH=1` or generated-depth mode | <https://huggingface.co/YkiWu/EmbodiedOcc/blob/main/finetune_scannet_depthanythingv2.pth>; also used by <https://github.com/Made-Gpt/SplatSSC> as FT-DaV2 | `pretrain/depth_anything/finetune_scannet_depthanythingv2.pth` |
 | AdaOcc fusion pretrain | <https://huggingface.co/wjldragon/AdaOcc/blob/main/pretrain/fusion_pretrain_model.pth> or full OPUS pretrain from <https://github.com/jbwang1997/OPUS> | `pretrain/fusion_pretrain_model.pth` |
 | Released AdaOcc model checkpoint | <https://huggingface.co/wjldragon/AdaOcc/blob/main/checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth> | `checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth` |
 
@@ -96,7 +106,13 @@ Download RADIO locally:
 hf download nvidia/C-RADIOv3-B --local-dir pretrain/radio/C-RADIOv3-B
 ```
 
-Place the Depth-Anything checkpoint manually at:
+If you choose the EfficientNet-B7 config, also place its timm checkpoint at:
+
+```text
+checkpoints/tf_efficientnet_b7_ns-1dbc32de.pth
+```
+
+For `ADAOCC_ONLINE_DEPTH=1` or generated precomputed-depth mode, place the Depth-Anything checkpoint manually at:
 
 ```text
 pretrain/depth_anything/finetune_scannet_depthanythingv2.pth
@@ -128,7 +144,7 @@ python -m pip install --no-build-isolation -r requirements.txt
 python -m pip check
 ```
 
-The custom MSMV CUDA extension is optional for this single-level RADIO baseline. If it is unavailable, use the PyTorch fallback by prefixing the train/eval command with `ADAOCC_DISABLE_MSMV_CUDA=1`. If you want to compile it, reuse the same shell variables above:
+The custom MSMV CUDA extension is optional for the public single-level image-encoder configs. If it is unavailable, use the PyTorch fallback by prefixing the train/eval command with `ADAOCC_DISABLE_MSMV_CUDA=1`. If you want to compile it, reuse the same shell variables above:
 
 ```bash
 cd models/csrc
@@ -161,7 +177,9 @@ python scripts/generate_occscannet_mini_gts_camvisbits.py --data-root data/OccSc
 python scripts/generate_occscannet_mini_gts_camvisbits.py --data-root data/OccScanNet --verify-only
 ```
 
-Default online-depth training does not need precomputed depth PNGs. For the optional precomputed-depth mode, first generate the depth tree with the same Depth-Anything-V2 checkpoint used by online depth:
+Default raw-depth training does not need Depth-Anything or generated precomputed depth PNGs; it reads the original same-stem depth files under `posed_images/`. Set `ADAOCC_ONLINE_DEPTH=1` only when you want online Depth-Anything prediction during train/eval.
+
+For the optional generated precomputed-depth mode, first generate the SPlatSSC-style FT-DaV2-aligned depth tree with the same Depth-Anything-V2 checkpoint used by SPlatSSC:
 
 ```bash
 python scripts/generate_occscannet_mini_depth_da_v2.py \
@@ -173,17 +191,17 @@ python scripts/generate_occscannet_mini_depth_da_v2.py \
   --verify-only
 ```
 
-The script reads the mini PKLs, loads `CAM_FRONT` images, writes depth to each pkl-referenced `cam["depth_path"]`, and skips existing files unless `--overwrite` is passed. Use `--limit N` for a small generation smoke test, or `--device cuda:0` / `--device cpu` to choose the inference device.
+The script reads the mini PKLs, loads `CAM_FRONT` images, writes depth to each pkl-referenced `cam["depth_path"]` under `depth_splatssc_stage1_ftdav2_vitb_20m_full/`, and skips existing files unless `--overwrite` is passed. Use `--limit N` for a small generation smoke test, or `--device cuda:0` / `--device cpu` to choose the inference device. Select these generated PNGs with `ADAOCC_RAW_DEPTH_FROM_IMAGES=0` when online depth is disabled.
 
 Precomputed depth PNGs are binary depth containers, not visual images: each pixel is one little-endian `float32` meter value stored as four uint8 PNG channels (`H x W x 4`). Do not convert, resize, color-map, or re-save them with image editors.
 
 Check assets:
 
 ```bash
-python scripts/check_assets.py --online-depth
+python scripts/check_assets.py --radio --raw-depth-from-images --verify-depth-png
 ```
 
-Use `--precomputed-depth --verify-depth-png` for the optional precomputed-depth mode. More data-generation details are in [`docs/DATA.md`](docs/DATA.md).
+Use `--radio` for the RADIO config asset. Use `--efficientnet-b7` instead when checking the EfficientNet-B7 config asset; that requires only `checkpoints/tf_efficientnet_b7_ns-1dbc32de.pth` and does not require RADIO. Omitting both image-encoder flags keeps the backwards-compatible RADIO check. Use `--online-depth` for the optional online Depth-Anything mode, or `--precomputed-depth --verify-depth-png` for the optional generated-depth mode. More data-generation details are in [`docs/DATA.md`](docs/DATA.md).
 
 ## 5. Final expected layout
 
@@ -203,7 +221,8 @@ AdaOcc/
 │       │       └── <frame>.pkl
 │       ├── posed_images/
 │       │   └── <scene>/
-│       │       └── <frame>.jpg
+│       │       ├── <frame>.jpg
+│       │       └── <frame>.png
 │       ├── gts_camvisbits/
 │       │   └── <scene>/
 │       │       └── <frame>/
@@ -218,67 +237,101 @@ AdaOcc/
 │   └── radio/
 │       └── C-RADIOv3-B/
 ├── checkpoints/
-│   └── adaocc_online_depth_occscannet_mini_epoch200.pth
+│   ├── adaocc_online_depth_occscannet_mini_epoch200.pth
+│   └── tf_efficientnet_b7_ns-1dbc32de.pth  # only for EfficientNet-B7 config
 └── outputs/
 ```
 
-## 6. Smoke, train, evaluate
+## 6. Choose image encoder config
+
+All smoke/train/eval commands below take a config path. Choose one image encoder config and keep using it for that run:
+
+| choice | full config | smoke config | extra asset |
+| --- | --- | --- | --- |
+| RADIO released/reference baseline | `configs/occscannet/radio_occscannet_mini.py` | `configs/occscannet/radio_occscannet_mini_smoke.py` | `pretrain/radio/C-RADIOv3-B/` |
+| EfficientNet-B7 additional option | `configs/occscannet/efficientnet_b7_occscannet_mini.py` | `configs/occscannet/efficientnet_b7_occscannet_mini_smoke.py` | `checkpoints/tf_efficientnet_b7_ns-1dbc32de.pth` |
+
+RADIO remains the released/reference baseline and is the config to use with the released checkpoint/metrics above. EfficientNet-B7 changes the config-selected `img_encoder.image_backbone_cfg`; it is not a new default and this README does not claim EfficientNet reproduction metrics.
+
+Set the config variables once per shell, for example:
+
+```bash
+# RADIO baseline
+CONFIG=configs/occscannet/radio_occscannet_mini.py
+SMOKE_CONFIG=configs/occscannet/radio_occscannet_mini_smoke.py
+
+# Or EfficientNet-B7 option
+CONFIG=configs/occscannet/efficientnet_b7_occscannet_mini.py
+SMOKE_CONFIG=configs/occscannet/efficientnet_b7_occscannet_mini_smoke.py
+```
+
+## 7. Smoke, train, evaluate
 
 Import/config smoke:
 
 ```bash
-ADAOCC_DISABLE_MSMV_CUDA=1 python - <<'PY'
+ADAOCC_DISABLE_MSMV_CUDA=1 CONFIG="$CONFIG" python - <<'PY'
+import os
 import torch, mmcv, mmengine, mmdet, mmdet3d, spconv, transformers
 from mmengine.config import Config
-cfg = Config.fromfile('configs/occscannet/radio_occscannet_mini.py')
+cfg = Config.fromfile(os.environ['CONFIG'])
+backbone = cfg.model.img_encoder.image_backbone_cfg
 print('torch', torch.__version__, 'cuda', torch.version.cuda, torch.cuda.is_available())
-print('model', cfg.model.type, 'online_depth', cfg.model.online_depth.enabled)
+print('model', cfg.model.type, 'image_backbone', backbone.type, 'online_depth', cfg.model.online_depth.enabled)
 PY
 ```
 
-One-epoch train+val smoke:
+Smoke training with the matching smoke config:
 
 ```bash
 ADAOCC_DISABLE_MSMV_CUDA=1 \
-./dist_train.sh 8 configs/occscannet/radio_occscannet_mini_smoke.py \
-  --run-label smoke-1epoch
+./dist_train.sh 8 "$SMOKE_CONFIG" \
+  --run-label smoke-config-selected
 ```
 
-Full training:
+Default raw-depth full training for a new raw-depth checkpoint:
 
 ```bash
 ADAOCC_DISABLE_MSMV_CUDA=1 \
-./dist_train.sh 8 configs/occscannet/radio_occscannet_mini.py \
-  --run-label online-depth-mini
+./dist_train.sh 8 "$CONFIG" \
+  --run-label config-selected-raw-depth-mini
 ```
 
-Evaluate the released checkpoint or your final checkpoint:
+Evaluate a checkpoint produced by that new raw-depth run with the same config:
 
 ```bash
 ADAOCC_DISABLE_MSMV_CUDA=1 \
+./dist_val.sh 8 "$CONFIG" /path/to/epoch_200.pth
+```
+
+The released checkpoint is an online-depth RADIO checkpoint, not a default raw-depth checkpoint. To reproduce the released validation result, use the fixed RADIO config path, enable online depth, and pass the released checkpoint path:
+
+```bash
+ADAOCC_ONLINE_DEPTH=1 ADAOCC_DISABLE_MSMV_CUDA=1 \
 ./dist_val.sh 8 configs/occscannet/radio_occscannet_mini.py \
   checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth
 ```
 
-For optional precomputed-depth training/eval, make sure `depth_splatssc_stage1_ftdav2_vitb_20m_full/` exists and set `ADAOCC_ONLINE_DEPTH=0` for both commands:
+For optional online Depth-Anything train/eval of a new run, keep the same config and add `ADAOCC_ONLINE_DEPTH=1`.
+
+For optional generated precomputed-depth training/eval, make sure `depth_splatssc_stage1_ftdav2_vitb_20m_full/` exists and set `ADAOCC_RAW_DEPTH_FROM_IMAGES=0` for both commands:
 
 ```bash
-ADAOCC_ONLINE_DEPTH=0 ADAOCC_DISABLE_MSMV_CUDA=1 \
-./dist_train.sh 8 configs/occscannet/radio_occscannet_mini.py \
+ADAOCC_RAW_DEPTH_FROM_IMAGES=0 ADAOCC_DISABLE_MSMV_CUDA=1 \
+./dist_train.sh 8 "$CONFIG" \
   --run-label precomputed-depth-mini
 
-ADAOCC_ONLINE_DEPTH=0 ADAOCC_DISABLE_MSMV_CUDA=1 \
-./dist_val.sh 8 configs/occscannet/radio_occscannet_mini.py \
-  checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth
+ADAOCC_RAW_DEPTH_FROM_IMAGES=0 ADAOCC_DISABLE_MSMV_CUDA=1 \
+./dist_val.sh 8 "$CONFIG" /path/to/epoch_200.pth
 ```
 
-`dist_train.sh` and `dist_val.sh` intentionally do not export CUDA, NCCL, Hugging Face, or AdaOcc path variables internally. They only call `torch.distributed.run` with the requested GPU count, config, and remaining arguments. Use `train.py` arguments such as `--run-label`, `--output-root`, or `--work-dir` for run placement; use command-prefix environment variables only for explicit mode switches such as `ADAOCC_DISABLE_MSMV_CUDA=1` or `ADAOCC_ONLINE_DEPTH=0`. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the online-depth/RADIO/TPV data flow and query schedule; [`docs/DEPENDENCY_TRACE.md`](docs/DEPENDENCY_TRACE.md) maps major code modules.
+`dist_train.sh` and `dist_val.sh` intentionally do not export CUDA, NCCL, Hugging Face, or AdaOcc path variables internally. They only call `torch.distributed.run` with the requested GPU count, config, and remaining arguments. Use `train.py` arguments such as `--run-label`, `--output-root`, or `--work-dir` for run placement; use command-prefix environment variables only for explicit mode switches such as `ADAOCC_DISABLE_MSMV_CUDA=1`, `ADAOCC_ONLINE_DEPTH=1`, or `ADAOCC_RAW_DEPTH_FROM_IMAGES=0`. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the online-depth/RADIO/EfficientNet/TPV data flow and query schedule; [`docs/DEPENDENCY_TRACE.md`](docs/DEPENDENCY_TRACE.md) maps major code modules.
 
 ## More details
 
 - [`docs/INSTALL.md`](docs/INSTALL.md) / [`docs/ENVIRONMENT_SETUP.md`](docs/ENVIRONMENT_SETUP.md): environment and optional CUDA extension notes
 - [`docs/DATA.md`](docs/DATA.md): PKLs, label fields, raw-axis convention, and depth PNG format
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): RADIO, online depth, TPV, and query schedule
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md): RADIO/EfficientNet image encoders, depth paths, TPV, and query schedule
 - [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md): smoke/full reproduction checklist and reference metrics
 - [`docs/LICENSE_AND_ASSETS.md`](docs/LICENSE_AND_ASSETS.md): upstream assets, licenses, and citations
 - [`docs/DEPENDENCY_TRACE.md`](docs/DEPENDENCY_TRACE.md): major code-module map

@@ -1,9 +1,8 @@
-"""AdaOcc public reproduction config: OccScanNet-mini + RADIO single-level baseline.
+"""AdaOcc experimental config: OccScanNet-mini + frozen EfficientNet-B7 image backbone.
 
-This file intentionally contains the effective baseline in one place so the
-open-source reproduction does not depend on dated/private experiment configs.
-Scientific defaults match the released seed-0 RADIO online-depth run; filesystem
-locations are fixed relative to the repository root by default.
+This config is a direct copy of the RADIO mini baseline with only the image
+backbone/preprocessing path changed for the EfficientNet experiment.  Keep the
+RADIO main config unchanged for baseline reproducibility.
 """
 
 import os as _os
@@ -11,7 +10,10 @@ import sys as _sys
 from pathlib import Path as _Path
 
 default_scope = "mmdet3d"
-custom_imports = dict(imports=["models", "loaders"], allow_failed_imports=False)
+custom_imports = dict(
+    imports=["models", "loaders", "models.backbones.timm_feature_backbone"],
+    allow_failed_imports=False,
+)
 
 _config_dir = _Path("{{ fileDirname }}").resolve()
 _repo_root = _Path(_os.getenv("ADAOCC_REPO_ROOT", _config_dir.parents[1])).expanduser().resolve()
@@ -38,6 +40,7 @@ test_ann_file = str(_Path(dataset_root) / "test_occscannet_mini.pkl")
 load_from = str(_repo_root / "pretrain" / "fusion_pretrain_model.pth")
 radio_model_id = str(_repo_root / "pretrain" / "radio" / "C-RADIOv3-B")
 radio_local_files_only = True
+efficientnet_checkpoint_path = str(_repo_root / "checkpoints" / "tf_efficientnet_b7_ns-1dbc32de.pth")
 output_root = str(_repo_root / "outputs")
 depth_anything_model_path = str(
     _repo_root / "pretrain" / "depth_anything" / "finetune_scannet_depthanythingv2.pth"
@@ -182,20 +185,22 @@ img_encoder = dict(
     preprocess_cfg=dict(
         resize_mode="patch_aligned_pad_bottom_right",
         patch_size=16,
-        norm_type="radio",
+        norm_type="imagenet",
     ),
     image_backbone_cfg=dict(
-        type="RADIOHFBackbone",
-        model_id_or_path=radio_model_id,
-        from_pretrained_kwargs=dict(local_files_only=radio_local_files_only),
+        type="TimmFeatureBackbone",
+        model_name="tf_efficientnet_b7_ns",
+        checkpoint_path=efficientnet_checkpoint_path,
+        pretrained=False,
+        features_only=True,
+        out_indices=(3,),
         freeze=True,
-        unfreeze_last_n_blocks=4,
-        in_channels=768,
+        strict_checkpoint=True,
+        expected_output_stride=image_feature_output_divisor,
         out_channels=image_feature_channels,
     ),
-    # The promoted baseline uses RADIO native features directly: 768 -> 512
-    # trainable projection, then a single stride-16 image level for AdaOcc sampling.
-    # Legacy geometry/post-fusion adapters are intentionally not present in AdaOcc.
+    # EfficientNet features are projected to the same 512-channel, stride-16 image
+    # level consumed by the existing AdaOcc decoder/head.
     pyramid_adapter_cfg=dict(
         enabled=True,
         view_batch_size=4,
