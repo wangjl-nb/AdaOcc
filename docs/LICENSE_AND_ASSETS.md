@@ -5,11 +5,8 @@ The AdaOcc code in this repository is released under the top-level `LICENSE`.
 The repository does not redistribute these assets:
 
 - OccScanNet data, generated labels, generated depth maps, mini PKLs
-- OPUS fusion pretrain checkpoint
-- RADIO weights/cache
-- EfficientNet-B7/timm weight file (`pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth`)
-- DepthAnything/SPlatSSC FT-DaV2 fine-tuned checkpoint
-- AdaOcc training checkpoints, logs, TensorBoard events, predictions
+- pretrained/external assets under `pretrain/`, including OPUS fusion pretrain, RADIO weights/cache, EfficientNet-B7/timm weight file (`pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth`), and DepthAnything/SPlatSSC FT-DaV2 fine-tuned checkpoint
+- trained AdaOcc model checkpoints under `checkpoints/`, logs, TensorBoard events, predictions
 
 Users are responsible for obtaining every external asset under its own license and terms.
 

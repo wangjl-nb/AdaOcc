@@ -290,15 +290,36 @@ def test_public_wrappers_use_fixed_repo_relative_layout():
 def test_public_docs_describe_config_choice_and_depth_defaults():
     readme = (ROOT / "README.md").read_text()
     data_doc = (ROOT / "docs" / "DATA.md").read_text()
+    ai_doc = (ROOT / "docs" / "AI_REPRODUCTION.md").read_text()
     repro = (ROOT / "docs" / "REPRODUCIBILITY.md").read_text()
     arch = (ROOT / "docs" / "ARCHITECTURE.md").read_text()
     dep = (ROOT / "docs" / "DEPENDENCY_TRACE.md").read_text()
     license_doc = (ROOT / "docs" / "LICENSE_AND_ASSETS.md").read_text()
 
-    for text in (readme, repro, arch, dep):
+    assert "docs/AI_REPRODUCTION.md" in readme
+    assert "AI-agent AdaOcc reproduction guide" in ai_doc
+    assert "do not modify unrelated model, data-loader, training, evaluation, or config logic" in ai_doc
+    assert "do not commit or push unless explicitly asked" in ai_doc
+    assert "Do not use global `CONFIG` or `SMOKE_CONFIG`" in ai_doc
+    assert "Choose config, depth mode, and run" in readme
+    assert "Choose image encoder by config path" in readme
+    assert "### 5.4 Final expected layout" in readme
+    assert "### 5.5 Smoke, train, and eval examples" in readme
+    assert readme.index("### 5.4 Final expected layout") < readme.index("### 5.5 Smoke, train, and eval examples")
+    assert "data/OccScanNet/" in readme
+    assert "train_occscannet_mini.pkl        # generated PKLs" in readme
+    assert "pretrain/                                         # external/pretrained weights/initializers" in readme
+    assert "gts_camvisbits/<scene>/<frame>/labels.npz" in readme
+    assert "posed_images/<scene>/<frame>.{jpg,png}" in readme
+    assert "depth_splatssc_stage1_ftdav2_vitb_20m_full/<scene>/<frame>.png" in readme
+    assert "optional generated precomputed depth" in readme
+    assert "checkpoints/                                      # trained AdaOcc model checkpoints" in readme
+    assert "adaocc_online_depth_occscannet_mini_epoch200.pth" in readme
+
+    for text in (readme, ai_doc, repro, arch, dep):
         assert "configs/occscannet/radio_occscannet_mini.py" in text
         assert "configs/occscannet/efficientnet_b7_occscannet_mini.py" in text
-    for text in (readme, data_doc, repro, arch):
+    for text in (readme, data_doc, ai_doc, repro, arch):
         assert "posed_images/<scene>/<frame>.png" in text
         assert "ADAOCC_ONLINE_DEPTH=1" in text
         assert "ADAOCC_RAW_DEPTH_FROM_IMAGES=0" in text
@@ -311,6 +332,7 @@ def test_public_docs_describe_config_choice_and_depth_defaults():
     assert "wget -O pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth" in readme
     assert "https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/tf_efficientnet_b7_ns-1dbc32de.pth" in readme
     assert "pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth" in data_doc
+    assert "pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth" in ai_doc
     assert "pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth" in repro
     assert "pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth" in arch
     assert "pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth" in dep
@@ -320,16 +342,32 @@ def test_public_docs_describe_config_choice_and_depth_defaults():
     assert "tf_efficientnet_b7_ns-1dbc32de.pth" in license_doc
     assert "--efficientnet-b7" in readme
     assert "--radio" in readme
+    assert "--radio" in ai_doc
     assert "--radio" in repro
     assert "--efficientnet-b7" in data_doc
+    assert "--efficientnet-b7" in ai_doc
     assert "--efficientnet-b7" in dep
-    assert "Default depth mode: local/raw" in repro
-    for text in (readme, repro):
-        assert "ADAOCC_ONLINE_DEPTH=1 ADAOCC_DISABLE_MSMV_CUDA=1" in text
+    assert "Default depth mode: local/prepared" in repro
+    for text in (readme, ai_doc, repro):
+        assert "CONFIG=configs/" not in text
+        assert "SMOKE_CONFIG=" not in text
+        assert "$CONFIG" not in text
+        assert "$SMOKE_CONFIG" not in text
+        assert "ADAOCC_DISABLE_MSMV_CUDA" in text
+        assert "PyTorch fallback" in text
+        assert text.count("ADAOCC_DISABLE_MSMV_CUDA=1") == 1
+        assert "ADAOCC_ONLINE_DEPTH=1 ADAOCC_DISABLE_MSMV_CUDA=1" not in text
+        assert "ADAOCC_RAW_DEPTH_FROM_IMAGES=0 ADAOCC_DISABLE_MSMV_CUDA=1" not in text
+        assert "./dist_train.sh 8 configs/occscannet/radio_occscannet_mini_smoke.py" in text
+        assert "./dist_train.sh 8 configs/occscannet/efficientnet_b7_occscannet_mini_smoke.py" in text
+    for text in (readme, ai_doc, repro):
+        assert "ADAOCC_ONLINE_DEPTH=1" in text
+        assert "ADAOCC_RAW_DEPTH_FROM_IMAGES=0" in text
+        assert "local/prepared" in text
         assert "./dist_val.sh 8 configs/occscannet/radio_occscannet_mini.py" in text
         assert "checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth" in text
         assert "released checkpoint" in text
-        assert "new raw-depth" in text
+        assert "Default local/prepared" in text
     assert "selected frozen image backbone" not in arch
     assert "unfreeze_last_n_blocks=4" in arch
     assert "EfficientNet-B7 backbone weights are frozen" in arch
