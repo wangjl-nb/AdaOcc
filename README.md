@@ -275,3 +275,21 @@ ADAOCC_RAW_DEPTH_FROM_IMAGES=0 \
 - [`docs/DEPENDENCY_TRACE.md`](docs/DEPENDENCY_TRACE.md): major code-module map
 
 Please cite/acknowledge OccScanNet, ScanNet, CompleteScanNet/SCFusion, OPUS, SPlatSSC, Depth Anything V2, and RADIO according to their licenses.
+
+## Citation
+
+If you find AdaOcc useful in your research, please consider citing our paper.
+
+```bibtex
+@inproceedings{wang2026adaocc,
+  title     = {AdaOcc: Adaptive 3D Occupancy Prediction for Embodied Tasks},
+  author    = {Wang, Jinglong and Wang, Yunjie and Zhang, Zhiyang and
+               He, Jiawei and Yuan, Ye and Qiu, Bo and Zhang, Jing},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume    = {39},
+  year      = {2026},
+  note      = {To appear}
+}
+```
+
+This entry is valid now and will be updated with the official proceedings key, pages, and URL once the NeurIPS 2026 proceedings are published.
