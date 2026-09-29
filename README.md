@@ -2,6 +2,14 @@
 
 **AdaOcc: Adaptive 3D Occupancy Prediction for Embodied Tasks**
 
+<p align="center">
+  <a href="https://wangjl-nb.github.io/AdaOcc_web/"><img src="https://img.shields.io/badge/Project_Page-AdaOcc-green" alt="Project Page"></a>
+  <a href="https://huggingface.co/wjldragon/AdaOcc"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Checkpoints-yellow" alt="Models and checkpoints"></a>
+  <img src="https://img.shields.io/badge/NeurIPS-2026-blueviolet" alt="NeurIPS 2026">
+</p>
+
+🎉 **AdaOcc has been accepted to NeurIPS 2026.** See the [project page](https://wangjl-nb.github.io/AdaOcc_web/) for videos and real-robot demos, and [Hugging Face](https://huggingface.co/wjldragon/AdaOcc) for released checkpoints.
+
 AdaOcc is a point-based adaptive 3D semantic occupancy framework for embodied scene understanding. This public repository contains code, data-preparation scripts, and reproduction docs for the OccScanNet-mini setup.
 
 If you are using an AI agent to reproduce AdaOcc, point it to [`docs/AI_REPRODUCTION.md`](docs/AI_REPRODUCTION.md).
