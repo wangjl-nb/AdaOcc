@@ -1,14 +1,25 @@
-# AdaOcc
+<div align="center">
 
-**AdaOcc: Adaptive 3D Occupancy Prediction for Embodied Tasks**
+<h1>AdaOcc: Adaptive 3D Occupancy Prediction for Embodied Tasks</h1>
 
-<p align="center">
-  <a href="https://wangjl-nb.github.io/AdaOcc_web/"><img src="https://img.shields.io/badge/Project_Page-AdaOcc-green" alt="Project Page"></a>
-  <a href="https://huggingface.co/wjldragon/AdaOcc"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Checkpoints-yellow" alt="Models and checkpoints"></a>
-  <img src="https://img.shields.io/badge/NeurIPS-2026-blueviolet" alt="NeurIPS 2026">
+<p>
+Jinglong Wang<sup>1,2</sup> &nbsp; Yunjie Wang<sup>2,3</sup> &nbsp; Zhiyang Zhang<sup>1,2</sup> &nbsp;
+Jiawei He<sup>2,4</sup> &nbsp; Ye Yuan<sup>5</sup> &nbsp; Bo Qiu<sup>6</sup> &nbsp; Jing Zhang<sup>1</sup>
+<br>
+<sup>1</sup>Beihang University &nbsp; <sup>2</sup>Beijing Academy of Artificial Intelligence &nbsp;
+<sup>3</sup>Hebei University of Technology &nbsp; <sup>4</sup>XYZ Embodied AI &nbsp;
+<sup>5</sup>ShanghaiTech University &nbsp; <sup>6</sup>University of Science and Technology Beijing
 </p>
 
-🎉 **AdaOcc has been accepted to NeurIPS 2026.** See the [project page](https://wangjl-nb.github.io/AdaOcc_web/) for videos and real-robot demos, and [Hugging Face](https://huggingface.co/wjldragon/AdaOcc) for released checkpoints.
+<p>
+<a href="https://wangjl-nb.github.io/AdaOcc_web/"><img src="https://img.shields.io/badge/Project_Page-AdaOcc-green" alt="Project Page"></a>
+<a href="https://huggingface.co/wjldragon/AdaOcc"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Checkpoints-yellow" alt="Models and checkpoints"></a>
+<img src="https://img.shields.io/badge/NeurIPS-2026-blueviolet" alt="NeurIPS 2026">
+</p>
+
+🎉 **Accepted to NeurIPS 2026.** See the [project page](https://wangjl-nb.github.io/AdaOcc_web/) for videos and real-robot demos, and [Hugging Face](https://huggingface.co/wjldragon/AdaOcc) for released checkpoints.
+
+</div>
 
 AdaOcc is a point-based adaptive 3D semantic occupancy framework for embodied scene understanding. This public repository contains code, data-preparation scripts, and reproduction docs for the OccScanNet-mini setup.
 
