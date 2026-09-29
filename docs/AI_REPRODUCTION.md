@@ -152,11 +152,16 @@ python scripts/generate_occscannet_mini_pkls.py \
   --overwrite
 ```
 
-3. Generate and verify labels.
+3. Generate and verify labels. Add the full-split `--splits` for the full-split checkpoint.
 
 ```bash
 python scripts/generate_occscannet_mini_gts_camvisbits.py --data-root data/OccScanNet --overwrite
 python scripts/generate_occscannet_mini_gts_camvisbits.py --data-root data/OccScanNet --verify-only
+
+python scripts/generate_occscannet_mini_gts_camvisbits.py \
+  --data-root data/OccScanNet \
+  --splits train_occscannet_full.pkl val_occscannet_full.pkl test_occscannet_full.pkl \
+  --overwrite
 ```
 
 4. Validate default local/prepared depth data and the selected image-encoder asset.
@@ -173,13 +178,18 @@ EfficientNet-B7:
 python scripts/check_assets.py --efficientnet-b7 --raw-depth-from-images --verify-depth-png
 ```
 
-5. Optional generated precomputed depth.
+5. Optional generated precomputed depth. The full-split checkpoint requires it, so also run the full-split `--splits` variant.
 
 ```bash
 python scripts/generate_occscannet_mini_depth_da_v2.py \
   --data-root data/OccScanNet \
   --weights pretrain/depth_anything/finetune_scannet_depthanythingv2.pth
 python scripts/generate_occscannet_mini_depth_da_v2.py --data-root data/OccScanNet --verify-only
+
+python scripts/generate_occscannet_mini_depth_da_v2.py \
+  --data-root data/OccScanNet \
+  --weights pretrain/depth_anything/finetune_scannet_depthanythingv2.pth \
+  --splits train_occscannet_full.pkl val_occscannet_full.pkl test_occscannet_full.pkl
 ```
 
 Validate generated precomputed depth:
@@ -187,6 +197,8 @@ Validate generated precomputed depth:
 ```bash
 python scripts/check_assets.py --radio --precomputed-depth --verify-depth-png
 python scripts/check_assets.py --efficientnet-b7 --precomputed-depth --verify-depth-png
+python scripts/check_assets.py --radio --precomputed-depth --verify-depth-png \
+  --splits train_occscannet_full.pkl val_occscannet_full.pkl test_occscannet_full.pkl
 ```
 
 ## Config choices

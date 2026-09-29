@@ -552,6 +552,12 @@ def test_full_split_config_and_checkpoint_checker_contracts():
         assert "configs/occscannet/radio_occscannet_full.py" in (ROOT / doc).read_text(), doc
     assert "train_occscannet_full.pkl" in readme
     assert "checkpoints/adaocc_radio_occscannet_full_epoch100.pth" in readme
+    # Full-split labels/depth must be generated explicitly, not only for the mini PKLs.
+    full_splits = "--splits train_occscannet_full.pkl val_occscannet_full.pkl test_occscannet_full.pkl"
+    assert full_splits in readme
+    assert full_splits in (ROOT / "docs" / "DATA.md").read_text()
+    assert full_splits in (ROOT / "docs" / "AI_REPRODUCTION.md").read_text()
+    assert full_splits in (ROOT / "docs" / "REPRODUCIBILITY.md").read_text()
 
     result = run_cmd([PYTHON, str(checker), "--help"])
     assert result.returncode == 0, result.stderr + result.stdout

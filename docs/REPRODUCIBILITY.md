@@ -195,7 +195,27 @@ ADAOCC_RAW_DEPTH_FROM_IMAGES=0 \
 ./dist_val.sh 8 configs/occscannet/radio_occscannet_mini.py /path/to/epoch_200.pth
 ```
 
-Released full-split RADIO checkpoint evaluation (the config defaults to generated precomputed depth):
+Released full-split RADIO checkpoint evaluation (the config defaults to generated precomputed depth). On a fresh machine, first generate the full-split PKLs plus the matching labels and depth, since the label/depth generators default to the mini PKLs:
+
+```bash
+python scripts/generate_occscannet_mini_pkls.py \
+  --data-root data/OccScanNet \
+  --train-count 0 --val-count 0 \
+  --train-output train_occscannet_full.pkl \
+  --val-output val_occscannet_full.pkl \
+  --test-output test_occscannet_full.pkl \
+  --overwrite
+
+python scripts/generate_occscannet_mini_gts_camvisbits.py \
+  --data-root data/OccScanNet \
+  --splits train_occscannet_full.pkl val_occscannet_full.pkl test_occscannet_full.pkl \
+  --overwrite
+
+python scripts/generate_occscannet_mini_depth_da_v2.py \
+  --data-root data/OccScanNet \
+  --weights pretrain/depth_anything/finetune_scannet_depthanythingv2.pth \
+  --splits train_occscannet_full.pkl val_occscannet_full.pkl test_occscannet_full.pkl
+```
 
 ```bash
 ./dist_val.sh 8 configs/occscannet/radio_occscannet_full.py \

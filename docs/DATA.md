@@ -59,7 +59,21 @@ python scripts/generate_occscannet_mini_pkls.py \
   --overwrite
 ```
 
-The full and mini PKLs point at the same `posed_images/`, `gathered_data/`, and `gts_camvisbits/` trees; only the indexed frame list changes.
+The full and mini PKLs point at the same `posed_images/`, `gathered_data/`, and `gts_camvisbits/` trees; only the indexed frame list changes. Because the label and depth generators default to the mini PKLs, pass the full-split PKLs explicitly when preparing a fresh full split:
+
+```bash
+python scripts/generate_occscannet_mini_gts_camvisbits.py \
+  --data-root data/OccScanNet \
+  --splits train_occscannet_full.pkl val_occscannet_full.pkl test_occscannet_full.pkl \
+  --overwrite
+
+python scripts/generate_occscannet_mini_depth_da_v2.py \
+  --data-root data/OccScanNet \
+  --weights pretrain/depth_anything/finetune_scannet_depthanythingv2.pth \
+  --splits train_occscannet_full.pkl val_occscannet_full.pkl test_occscannet_full.pkl
+```
+
+The generated label and depth trees are shared with the mini split, so running them for the full split also covers every mini frame.
 
 ## Labels
 

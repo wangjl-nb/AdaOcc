@@ -168,7 +168,7 @@ python scripts/generate_occscannet_mini_gts_camvisbits.py --data-root data/OccSc
 python scripts/check_assets.py --radio --raw-depth-from-images --verify-depth-png
 ```
 
-Full-split PKLs for `configs/occscannet/radio_occscannet_full.py` (the same labels and images, but indexing every entry in `train_subscenes.txt` / `val_subscenes.txt`):
+Full-split PKLs for `configs/occscannet/radio_occscannet_full.py` (the same source images, but indexing every entry in `train_subscenes.txt` / `val_subscenes.txt`):
 
 ```bash
 python scripts/generate_occscannet_mini_pkls.py \
@@ -178,6 +178,20 @@ python scripts/generate_occscannet_mini_pkls.py \
   --val-output val_occscannet_full.pkl \
   --test-output test_occscannet_full.pkl \
   --overwrite
+```
+
+The label and depth generators default to the mini PKLs, so select the full-split PKLs explicitly for the full checkpoint. Both generated trees are shared, so this also covers the mini frames:
+
+```bash
+python scripts/generate_occscannet_mini_gts_camvisbits.py \
+  --data-root data/OccScanNet \
+  --splits train_occscannet_full.pkl val_occscannet_full.pkl test_occscannet_full.pkl \
+  --overwrite
+
+python scripts/generate_occscannet_mini_depth_da_v2.py \
+  --data-root data/OccScanNet \
+  --weights pretrain/depth_anything/finetune_scannet_depthanythingv2.pth \
+  --splits train_occscannet_full.pkl val_occscannet_full.pkl test_occscannet_full.pkl
 
 python scripts/check_assets.py --radio --precomputed-depth --verify-depth-png \
   --splits train_occscannet_full.pkl val_occscannet_full.pkl test_occscannet_full.pkl
