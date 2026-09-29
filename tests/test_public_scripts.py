@@ -511,3 +511,49 @@ def test_efficientnet_checkpoint_prefix_policy_covers_local_checkpoint():
 
     assert trunk_prefixes.issubset(prefixes)
     assert post_feature_prefixes.issubset(allowed_prefixes)
+
+
+def test_full_split_config_and_checkpoint_checker_contracts():
+    full_cfg = ROOT / "configs" / "occscannet" / "radio_occscannet_full.py"
+    checker = ROOT / "scripts" / "check_checkpoint.py"
+    assert full_cfg.is_file()
+    assert checker.is_file()
+
+    full_text = full_cfg.read_text()
+    assert "_base_" not in full_text
+    assert 'train_ann_file = str(_Path(dataset_root) / "train_occscannet_full.pkl")' in full_text
+    assert 'val_ann_file = str(_Path(dataset_root) / "val_occscannet_full.pkl")' in full_text
+    assert 'test_ann_file = str(_Path(dataset_root) / "test_occscannet_full.pkl")' in full_text
+    assert "total_epochs = 100" in full_text
+    assert "val_interval = 10" in full_text
+    assert "initial_num_query = 200" in full_text
+    assert "grow_num_query = 100" in full_text
+    assert "grow_every_epochs = 25" in full_text
+    assert 'raw_depth_from_images = _bool_env("ADAOCC_RAW_DEPTH_FROM_IMAGES", False)' in full_text
+    # Same model architecture as the released mini baseline.
+    for token in (
+        "RADIOHFBackbone",
+        "SparseEncoderTPVOnly",
+        "TPVLiteEncoder",
+        "AdaOccTransformer",
+        "AdaOccHead",
+    ):
+        assert token in full_text
+
+    readme = (ROOT / "README.md").read_text()
+    for doc in [
+        "README.md",
+        "docs/REPRODUCIBILITY.md",
+        "docs/AI_REPRODUCTION.md",
+        "docs/DATA.md",
+        "docs/ARCHITECTURE.md",
+        "docs/DEPENDENCY_TRACE.md",
+    ]:
+        assert "configs/occscannet/radio_occscannet_full.py" in (ROOT / doc).read_text(), doc
+    assert "train_occscannet_full.pkl" in readme
+    assert "checkpoints/adaocc_radio_occscannet_full_epoch100.pth" in readme
+
+    result = run_cmd([PYTHON, str(checker), "--help"])
+    assert result.returncode == 0, result.stderr + result.stdout
+    assert "--config" in result.stdout
+    assert "--checkpoint" in result.stdout

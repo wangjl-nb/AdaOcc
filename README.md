@@ -21,7 +21,7 @@ Jiawei He<sup>2,4</sup> &nbsp; Ye Yuan<sup>5</sup> &nbsp; Bo Qiu<sup>6</sup> &nb
 
 </div>
 
-AdaOcc is a point-based adaptive 3D semantic occupancy framework for embodied scene understanding. This public repository contains code, data-preparation scripts, and reproduction docs for the OccScanNet-mini setup.
+AdaOcc is a point-based adaptive 3D semantic occupancy framework for embodied scene understanding. This public repository contains code, data-preparation scripts, and reproduction docs for the OccScanNet-mini setup and for the released OccScanNet full-split checkpoint.
 
 If you are using an AI agent to reproduce AdaOcc, point it to [`docs/AI_REPRODUCTION.md`](docs/AI_REPRODUCTION.md).
 
@@ -32,6 +32,13 @@ This repo does not redistribute OccScanNet data, pretrained weights, trained che
 ## Released result
 
 Checkpoints and release files: <https://huggingface.co/wjldragon/AdaOcc>
+
+Released RADIO AdaOcc checkpoints:
+
+| checkpoint | split | epoch | mIoU | IoU |
+| --- | --- | ---: | ---: | ---: |
+| `checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth` | OccScanNet-mini | 200 | 58.49 | 65.49 |
+| `checkpoints/adaocc_radio_occscannet_full_epoch100.pth` | OccScanNet full | 100 | 59.67 | 65.29 |
 
 Released RADIO online-depth epoch-200 OccScanNet-mini validation result:
 
@@ -47,6 +54,13 @@ Evaluate the released checkpoint:
 ADAOCC_ONLINE_DEPTH=1 \
 ./dist_val.sh 8 configs/occscannet/radio_occscannet_mini.py \
   checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth
+```
+
+Evaluate the released full-split checkpoint on OccScanNet full validation (the config defaults to the generated precomputed depth used by the released run):
+
+```bash
+./dist_val.sh 8 configs/occscannet/radio_occscannet_full.py \
+  checkpoints/adaocc_radio_occscannet_full_epoch100.pth
 ```
 
 ## 1. Prepare OccScanNet
@@ -84,12 +98,14 @@ Place pretrained/external weights under `pretrain/`. `checkpoints/` means user-p
 | EfficientNet-B7 weight file | <https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/tf_efficientnet_b7_ns-1dbc32de.pth> | `pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth` |
 | Depth-Anything FT checkpoint, optional for online/generated depth | <https://huggingface.co/YkiWu/EmbodiedOcc/blob/main/finetune_scannet_depthanythingv2.pth> | `pretrain/depth_anything/finetune_scannet_depthanythingv2.pth` |
 | AdaOcc fusion pretrain | <https://huggingface.co/wjldragon/AdaOcc/blob/main/pretrain/fusion_pretrain_model.pth> | `pretrain/fusion_pretrain_model.pth` |
-| Released AdaOcc trained checkpoint | <https://huggingface.co/wjldragon/AdaOcc/blob/main/checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth> | `checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth` |
+| Released AdaOcc mini checkpoint | <https://huggingface.co/wjldragon/AdaOcc/blob/main/checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth> | `checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth` |
+| Released AdaOcc full-split checkpoint | <https://huggingface.co/wjldragon/AdaOcc/blob/main/checkpoints/adaocc_radio_occscannet_full_epoch100.pth> | `checkpoints/adaocc_radio_occscannet_full_epoch100.pth` |
 
 ```bash
 hf download wjldragon/AdaOcc \
   pretrain/fusion_pretrain_model.pth \
   checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth \
+  checkpoints/adaocc_radio_occscannet_full_epoch100.pth \
   --local-dir .
 
 hf download nvidia/C-RADIOv3-B --local-dir pretrain/radio/C-RADIOv3-B
@@ -114,7 +130,8 @@ AdaOcc/
 │   └── depth_anything/               # optional unless using online/generated depth
 │       └── finetune_scannet_depthanythingv2.pth
 └── checkpoints/                      # trained AdaOcc model checkpoints
-    └── adaocc_online_depth_occscannet_mini_epoch200.pth
+    ├── adaocc_online_depth_occscannet_mini_epoch200.pth
+    └── adaocc_radio_occscannet_full_epoch100.pth
 ```
 
 See [`docs/LICENSE_AND_ASSETS.md`](docs/LICENSE_AND_ASSETS.md) for asset routes, license notes, and OPUS-derived fusion-pretrain details.
@@ -142,11 +159,28 @@ See [`docs/INSTALL.md`](docs/INSTALL.md) for tested versions and CUDA-extension 
 
 ## 4. Generate data files
 
+Mini baseline PKLs:
+
 ```bash
 python scripts/generate_occscannet_mini_pkls.py --data-root data/OccScanNet --overwrite
 python scripts/generate_occscannet_mini_gts_camvisbits.py --data-root data/OccScanNet --overwrite
 python scripts/generate_occscannet_mini_gts_camvisbits.py --data-root data/OccScanNet --verify-only
 python scripts/check_assets.py --radio --raw-depth-from-images --verify-depth-png
+```
+
+Full-split PKLs for `configs/occscannet/radio_occscannet_full.py` (the same labels and images, but indexing every entry in `train_subscenes.txt` / `val_subscenes.txt`):
+
+```bash
+python scripts/generate_occscannet_mini_pkls.py \
+  --data-root data/OccScanNet \
+  --train-count 0 --val-count 0 \
+  --train-output train_occscannet_full.pkl \
+  --val-output val_occscannet_full.pkl \
+  --test-output test_occscannet_full.pkl \
+  --overwrite
+
+python scripts/check_assets.py --radio --precomputed-depth --verify-depth-png \
+  --splits train_occscannet_full.pkl val_occscannet_full.pkl test_occscannet_full.pkl
 ```
 
 Optional generated precomputed-depth mode:
@@ -161,6 +195,18 @@ python scripts/check_assets.py --radio --precomputed-depth --verify-depth-png
 
 Use `--efficientnet-b7` instead of `--radio` when checking the EfficientNet-B7 asset. Use `--online-depth` when checking the optional online Depth-Anything checkpoint.
 
+Verify that a downloaded checkpoint loads into its public config before running evaluation:
+
+```bash
+python scripts/check_checkpoint.py \
+  --config configs/occscannet/radio_occscannet_mini.py \
+  --checkpoint checkpoints/adaocc_online_depth_occscannet_mini_epoch200.pth
+
+python scripts/check_checkpoint.py \
+  --config configs/occscannet/radio_occscannet_full.py \
+  --checkpoint checkpoints/adaocc_radio_occscannet_full_epoch100.pth
+```
+
 ## 5. Choose config, depth mode, and run
 
 ### 5.1 Choose image encoder by config path
@@ -169,16 +215,18 @@ Pass the config path directly to `dist_train.sh` / `dist_val.sh`.
 
 | choice | full config | smoke config | extra asset |
 | --- | --- | --- | --- |
-| RADIO released/reference baseline | `configs/occscannet/radio_occscannet_mini.py` | `configs/occscannet/radio_occscannet_mini_smoke.py` | `pretrain/radio/C-RADIOv3-B/` |
+| RADIO released/reference baseline (OccScanNet-mini) | `configs/occscannet/radio_occscannet_mini.py` | `configs/occscannet/radio_occscannet_mini_smoke.py` | `pretrain/radio/C-RADIOv3-B/` |
+| RADIO released full-split checkpoint (OccScanNet full) | `configs/occscannet/radio_occscannet_full.py` | — | `pretrain/radio/C-RADIOv3-B/` |
 | EfficientNet-B7 additional option | `configs/occscannet/efficientnet_b7_occscannet_mini.py` | `configs/occscannet/efficientnet_b7_occscannet_mini_smoke.py` | `pretrain/timm/tf_efficientnet_b7_ns-1dbc32de.pth` |
 
-RADIO is the released/reference baseline. EfficientNet-B7 is an additional config-selected image encoder option and has no released metric claim here.
+RADIO is the released/reference baseline. `radio_occscannet_full.py` is the full-split companion of the RADIO mini baseline and uses the same model class and hyperparameters apart from the data split, the progressive-query schedule, and the default depth mode. EfficientNet-B7 is an additional config-selected image encoder option and has no released metric claim here.
 
 ### 5.2 Choose depth mode
 
 - Default local/prepared depth: no depth env prefix; uses local same-stem `posed_images/<scene>/<frame>.png` files, not online prediction.
 - Online predicted depth: prefix the command with `ADAOCC_ONLINE_DEPTH=1` and provide `pretrain/depth_anything/finetune_scannet_depthanythingv2.pth`.
 - Generated precomputed depth: after generating `depth_splatssc_stage1_ftdav2_vitb_20m_full/`, prefix the command with `ADAOCC_RAW_DEPTH_FROM_IMAGES=0`.
+- `configs/occscannet/radio_occscannet_full.py` already defaults to generated precomputed depth (`ADAOCC_RAW_DEPTH_FROM_IMAGES=0`), so the released full-split checkpoint evaluates with no depth env prefix. Set `ADAOCC_RAW_DEPTH_FROM_IMAGES=1` to override it.
 - Use the same config path and depth-mode switch for train/eval of a given checkpoint.
 
 ### 5.3 Optional MSMV fallback
@@ -198,6 +246,9 @@ data/OccScanNet/
 ├── train_occscannet_mini.pkl        # generated PKLs
 ├── val_occscannet_mini.pkl
 ├── test_occscannet_mini.pkl
+├── train_occscannet_full.pkl        # generated full-split PKLs
+├── val_occscannet_full.pkl
+├── test_occscannet_full.pkl
 ├── gts_camvisbits/<scene>/<frame>/labels.npz
 ├── posed_images/<scene>/<frame>.{jpg,png}
 └── depth_splatssc_stage1_ftdav2_vitb_20m_full/<scene>/<frame>.png   # optional generated precomputed depth
@@ -207,7 +258,8 @@ pretrain/                                         # external/pretrained weights/
 ├── timm/tf_efficientnet_b7_ns-1dbc32de.pth
 └── depth_anything/finetune_scannet_depthanythingv2.pth   # optional online/generated-depth initializer
 checkpoints/                                      # trained AdaOcc model checkpoints
-└── adaocc_online_depth_occscannet_mini_epoch200.pth
+├── adaocc_online_depth_occscannet_mini_epoch200.pth
+└── adaocc_radio_occscannet_full_epoch100.pth
 outputs/
 ```
 
@@ -262,6 +314,20 @@ ADAOCC_RAW_DEPTH_FROM_IMAGES=0 \
 
 ADAOCC_RAW_DEPTH_FROM_IMAGES=0 \
 ./dist_val.sh 8 configs/occscannet/radio_occscannet_mini.py /path/to/epoch_200.pth
+```
+
+Released full-split RADIO checkpoint evaluation (the config defaults to generated precomputed depth):
+
+```bash
+./dist_val.sh 8 configs/occscannet/radio_occscannet_full.py \
+  checkpoints/adaocc_radio_occscannet_full_epoch100.pth
+```
+
+Full-split RADIO training (100 epochs, 200 -> 500 queries):
+
+```bash
+./dist_train.sh 8 configs/occscannet/radio_occscannet_full.py \
+  --run-label radio-full-split
 ```
 
 ## More docs

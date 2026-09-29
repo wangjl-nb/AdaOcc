@@ -1,11 +1,12 @@
 # Dependency trace
 
-Public OccScanNet-mini configs:
+Public OccScanNet configs:
 
 - RADIO released/reference baseline: `configs/occscannet/radio_occscannet_mini.py`
+- RADIO released full-split companion: `configs/occscannet/radio_occscannet_full.py`
 - EfficientNet-B7 additional image encoder option: `configs/occscannet/efficientnet_b7_occscannet_mini.py`
 
-Both configs keep the same AdaOcc detector, TPV branch, decoder, data pipeline, depth-mode env flags, and query schedule. They differ in the config-selected `model.img_encoder.image_backbone_cfg` image backbone.
+All three configs keep the same AdaOcc detector, TPV branch, decoder, and data pipeline. The two RADIO configs differ only in the data split, the progressive-query schedule, and the default depth mode; the EfficientNet-B7 config differs in the config-selected `model.img_encoder.image_backbone_cfg` image backbone.
 
 Key local modules:
 
@@ -18,7 +19,8 @@ Key local modules:
 | EfficientNet-B7 image encoder | `models/backbones/timm_feature_backbone.py`, `models/backbones/modular_occ_encoder.py` |
 | TPV branch | `models/lidar_encoder/sparse_encoder_tpv.py`, `models/lidar_encoder/tpv_lite_encoder.py` |
 | Dataset | `loaders/occscannet_dataset.py`, `loaders/pipelines/*`, `loaders/metrics/occ3d_metric.py` |
-| Asset/docs checks | `scripts/check_assets.py` (`--raw-depth-from-images`, `--online-depth`, `--precomputed-depth`, `--efficientnet-b7`) |
+| Asset/docs checks | `scripts/check_assets.py` (`--raw-depth-from-images`, `--online-depth`, `--precomputed-depth`, `--efficientnet-b7`, `--splits`) |
+| Checkpoint check | `scripts/check_checkpoint.py` (checkpoint/config parameter parity) |
 | Runtime | `train.py`, `val.py`, `dist_train.sh`, `dist_val.sh`, `models/runtime.py` |
 | Optional CUDA sampling | `models/csrc/*` |
 
