@@ -288,7 +288,7 @@ If you find AdaOcc useful in your research, please consider citing our paper.
   booktitle = {Advances in Neural Information Processing Systems},
   volume    = {39},
   year      = {2026},
-  note      = {To appear}
+  note      = {Accepted to NeurIPS 2026}
 }
 ```
 
