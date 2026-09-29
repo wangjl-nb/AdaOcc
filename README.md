@@ -21,6 +21,10 @@ Jiawei He<sup>2,4</sup> &nbsp; Ye Yuan<sup>5</sup> &nbsp; Bo Qiu<sup>6</sup> &nb
 
 </div>
 
+<p align="center">
+  <img src="assets/teaser.png" width="100%" alt="AdaOcc overview: heterogeneous robots and sensors feed an adaptive point-based occupancy framework that predicts semantic 3D occupancy for navigation, manipulation, and mobile manipulation.">
+</p>
+
 AdaOcc is a point-based adaptive 3D semantic occupancy framework for embodied scene understanding. This public repository contains code, data-preparation scripts, and reproduction docs for the OccScanNet-mini setup and for the released OccScanNet full-split checkpoint.
 
 If you are using an AI agent to reproduce AdaOcc, point it to [`docs/AI_REPRODUCTION.md`](docs/AI_REPRODUCTION.md).
