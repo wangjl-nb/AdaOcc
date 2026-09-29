@@ -221,16 +221,10 @@ Syntax check:
 python -m py_compile scripts/check_assets.py scripts/check_checkpoint.py
 ```
 
-Public script tests:
-
-```bash
-pytest -q tests/test_public_scripts.py
-```
-
 Markdown/file whitespace check:
 
 ```bash
-git diff --check -- README.md docs/*.md scripts/check_assets.py scripts/check_checkpoint.py tests/test_public_scripts.py
+git diff --check -- README.md docs/*.md scripts/check_assets.py scripts/check_checkpoint.py
 ```
 
 Quick config import check:
