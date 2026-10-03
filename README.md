@@ -12,12 +12,13 @@ Jiawei He<sup>2,4</sup> &nbsp; Ye Yuan<sup>5</sup> &nbsp; Bo Qiu<sup>6</sup> &nb
 </p>
 
 <p>
+<a href="https://arxiv.org/abs/2609.38864"><img src="https://img.shields.io/badge/arXiv-2609.38864-b31b1b" alt="arXiv"></a>
 <a href="https://wangjl-nb.github.io/AdaOcc_web/"><img src="https://img.shields.io/badge/Project_Page-AdaOcc-green" alt="Project Page"></a>
 <a href="https://huggingface.co/wjldragon/AdaOcc"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Checkpoints-yellow" alt="Models and checkpoints"></a>
 <img src="https://img.shields.io/badge/NeurIPS-2026-blueviolet" alt="NeurIPS 2026">
 </p>
 
-🎉 **Accepted to NeurIPS 2026.** See the [project page](https://wangjl-nb.github.io/AdaOcc_web/) for videos and real-robot demos, and [Hugging Face](https://huggingface.co/wjldragon/AdaOcc) for released checkpoints.
+🎉 **Accepted to NeurIPS 2026.** Paper: [arXiv:2609.38864](https://arxiv.org/abs/2609.38864). See the [project page](https://wangjl-nb.github.io/AdaOcc_web/) for videos and real-robot demos, and [Hugging Face](https://huggingface.co/wjldragon/AdaOcc) for released checkpoints.
 
 </div>
 
@@ -372,7 +373,8 @@ If you find AdaOcc useful in your research, please consider citing our paper.
   booktitle = {Advances in Neural Information Processing Systems},
   volume    = {39},
   year      = {2026},
-  note      = {Accepted to NeurIPS 2026}
+  note      = {Accepted to NeurIPS 2026},
+  url       = {https://arxiv.org/abs/2609.38864}
 }
 ```
 
